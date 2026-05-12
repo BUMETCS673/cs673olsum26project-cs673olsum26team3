@@ -10,7 +10,7 @@ My name is Jannatul Tuba, and this is my final course in the MS Software Develop
 
 
 ## Vy Trinh
-
+My name is Vy Trinh.I am currently pursuing a Master’s degree in Computer Science at Boston University, with a concentration in Artificial Intelligence.My academic background is in computer science, and I’m particularly interested in applying AI to real-world problems, especially in healthcare and dental applications. I have experience with machine learning, neural networks, and data analysis. One project I worked on involves using AI to analyze dental X-ray images for diagnosis, where I explored how models can assist in identifying potential dental issues.
 
 
 
