@@ -10,7 +10,7 @@ My name is Danielle Leask and I am currently pursuing my Master’s degree in So
 
 
 ## Vy Trinh
-
+My name is Vy Trinh. I am currently pursuing a Master’s degree in Computer Science at Boston University, with a concentration in AI. My academic background is in computer science, and I’m particularly interested in applying AI to real-world problems, especially in healthcare and dental applications. I have experience with machine learning, neural networks, and data analysis. One project I worked on involves using AI to analyze dental X-ray images for diagnosis, where I explored how models can assist in identifying potential dental issues.
 
 
 
