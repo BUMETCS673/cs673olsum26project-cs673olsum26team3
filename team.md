@@ -5,7 +5,7 @@
 My name is Jannatul Tuba, and this is my final course in the MS Software Development program at BU. I am graduating this summer and it feels exciting and a little surreal to finally be at the finish line!My undergraduate degree is in Computer Science and Engineering from North South University in Bangladesh, and I have been working professionally in software testing and QA automation for several years now. 
 
 ## Danielle Leask
-
+My name is Danielle Leask and I am currently pursuing my Master’s degree in Software Development. I will be starting my electives next term and plan to focus on machine learning and AI as I work toward the Applied AI and Machine Learning certificate at Boston University. My undergraduate degree is not in computer science, but I transitioned into tech through self-teaching and professional experience. I worked in software testing and as a junior software engineer. I returned to school to strengthen my technical foundation and continue growing in the field. Outside of academics, I enjoy creative hobbies such as knitting and pottery, and I love traveling — 19 countries and counting!
 
 
 
