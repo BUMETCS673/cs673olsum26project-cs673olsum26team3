@@ -15,5 +15,5 @@ My name is Vy Trinh. I am currently pursuing a Master’s degree in Computer Sci
 
 ## Yuting Shi
 
-
+My name is Yuting Shi and I'm in my first year of my MS in Computer Science at BU MET. I did my undergrad BA in Computer Science at BU CAS and graduated in 2025. I currently work in research at Mass Gen Brigham and I enjoy being able to work on impactful projects using my computer and data sciences skills. Outside of work/school I usually hang out with my friends, go to the gym, or go on runs. 
 
