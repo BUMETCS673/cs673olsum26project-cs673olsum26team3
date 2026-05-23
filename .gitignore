@@ -1,0 +1,8 @@
+# ==========================================
+# Test Case Generator Module (Node.js & React)
+# ==========================================
+test-case-generator/backend/node_modules/
+test-case-generator/frontend/node_modules/
+test-case-generator/frontend/dist/
+test-case-generator/frontend/build/
+test-case-generator/**/*.log
