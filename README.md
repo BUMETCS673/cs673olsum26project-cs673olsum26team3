@@ -34,6 +34,6 @@ Step 5: Start frontend development server
 cmd: npm run dev
 
 HOW TO RUN DOCK
-Keep both terminals open at the same time:
-Terminal 1: Run "node server.js" to keep backend active
-Terminal 2: Run "npm run dev" to keep frontend active
+- Keep both terminals open at the same time:
+- Terminal 1: Run "node server.js" to keep backend active
+- Terminal 2: Run "npm run dev" to keep frontend active
