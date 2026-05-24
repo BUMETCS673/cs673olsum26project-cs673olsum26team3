@@ -1,0 +1,15 @@
+# Ignore node modules for backend and frontend
+test-case-generator/backend/node_modules/
+test-case-generator/frontend/node_modules/
+
+# Ignore frontend build outputs
+test-case-generator/frontend/dist/
+test-case-generator/frontend/build/
+
+# Ignore all log files
+**/*.log
+
+# Ignore local environment configurations
+.env
+.env.local
+**/.env
