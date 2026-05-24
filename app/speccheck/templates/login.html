@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SpecCheck Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f9; margin: 0; padding: 0; }
+        .page { display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .card { width: 100%; max-width: 750px; background: white; padding: 32px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center;}
+        button { width: 95%; padding: 12px; border: none; border-radius: 8px; background: #3f0227; color: white; font-size: 16px; cursor: pointer; margin-top: 6px; }
+        button:hover {opacity: 0.9;}
+        h1 { margin-bottom: 24px; color: #3f0227; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; }
+        input { width: 95%; padding: 12px 14px; margin-bottom: 18px; border: 1px solid #d1d5db; border-radius: 8px; }
+        .error { margin-bottom: 18px; color: #b91c1c; background: #fee2e2; padding: 12px; border-radius: 8px; }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="card">
+        <h1>SpecCheck</h1>
+        <h7>AI tool for generating test cases for your software projects!</h7>
+        <br/>
+        <br/>
+        {% if messages %}
+            {% for message in messages %}
+                <div class="error">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        <form method="post" action="">
+            {% csrf_token %}
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" placeholder="Enter username" required>
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" placeholder="Enter password" required>
+
+            <button type="submit">Sign in</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>
