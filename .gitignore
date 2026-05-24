@@ -17,6 +17,7 @@ __pycache__/
 # Environment variables
 .env
 .env.local
+**/.env
 
 # OS files
 .DS_Store
@@ -24,6 +25,15 @@ Thumbs.db
 
 # Node
 node_modules/
+test-case-generator/backend/node_modules/
+test-case-generator/frontend/node_modules/
+
+# Frontend build outputs
+test-case-generator/frontend/dist/
+test-case-generator/frontend/build/
+
+# Log files
+**/*.log
 
 # IDE
 .vscode/

@@ -1,39 +1,17 @@
-BACKEND SETUP
+## Overview
+Our goal is to develop a web-based application where users can provide context in the form of PDFs, API specs, and feature documents, and then have the AI generate targeted test cases when a user story is submitted. The system stores the uploaded knowledge persistently using a vector database so that it can be retrieved and used as grounded context at generation time, rather than relying on the AI to guess at product behavior it has never seen.
 
-Step 1: Open Terminal/Command Prompt and navigate to backend folder
-cmd: cd path/to/backend
-Note: Use backslashes () on Windows and forward slashes (/) on Mac
+## Motivation
+Help software companies reduce the time and manual effort spent creating test cases and validating product features.
 
-Step 2: Initialize project
-cmd: npm init -y
+## Purpose
+Automatically generate functional, negative, and edge case test cases from product documentation to improve software quality and provide early feedback on features.
 
-Step 3: Install backend libraries
-cmd: npm install express multer pdf-parse pdf-parse-fork tesseract.js cors
+## Potential Users
+Software companies, including developers, QA engineers, and product teams.
 
-Step 4: Create server file
-Action: Create server.js file in this folder
+## Basic Functionality
+Users upload product documents (PDFs, API specs, etc.), and the system uses AI to analyze them and generate test cases from a given user story.
 
-Step 5: Start backend server
-cmd: node server.js
-
-FRONTEND SETUP
-
-Step 1: Open a new Terminal window and navigate to frontend folder
-cmd: cd path/to/frontend
-
-Step 2: Initialize React Vite project
-cmd: npm create vite@latest . -- --template react
-
-Step 3: Install icon library
-cmd: npm install lucide-react
-
-Step 4: Build interface
-Action: Edit App.jsx and App.css files
-
-Step 5: Start frontend development server
-cmd: npm run dev
-
-HOW TO RUN DOCK
-- Keep both terminals open at the same time:
-- Terminal 1: Run "node server.js" to keep backend active
-- Terminal 2: Run "npm run dev" to keep frontend active
+## Technology Stack
+The system will be built using Django for the backend and web interface, MongoDB as the database, and Jira for agile project management. AI/ML tools will be integrated to enable automated document processing and natural language understanding for test case generation.
