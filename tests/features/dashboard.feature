@@ -45,6 +45,8 @@ Feature: Document Dashboard
     When the user clicks the Upload Files button without selecting any files
     Then an alert appears containing "Please select or drop at least one valid file"
 
+
+
   @upload
   Scenario: Multiple files uploaded in a single request all appear in the table
     When the user selects files "sample_valid.pdf", "sample_valid.png", "sample_valid.jpg"
