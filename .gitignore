@@ -1,25 +1,30 @@
-# ==========================================
-# Test Case Generator Module (Node.js & React)
-# ==========================================
-test-case-generator/backend/node_modules/
-test-case-generator/frontend/node_modules/
-test-case-generator/frontend/dist/
-test-case-generator/frontend/build/
-test-case-generator/**/*.log
+# Python virtual environment
+venv/
+.venv/
+env/
 
-# ==========================================
-# Playwright BDD Test Suite (Python)
-# ==========================================
-tests/venv/
-tests/.venv/
-tests/reports/
-tests/__pycache__/
-tests/.pytest_cache/
-tests/**/__pycache__/
-tests/**/*.pyc
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
 
-# Generated fixture files — run `python create_fixtures.py` to recreate
-tests/fixtures/sample_valid.pdf
-tests/fixtures/sample_valid.png
-tests/fixtures/sample_valid.jpg
-tests/fixtures/sample_oversized.pdf
+# Test artifacts
+.pytest_cache/
+*.egg-info/
+
+# Environment variables
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
