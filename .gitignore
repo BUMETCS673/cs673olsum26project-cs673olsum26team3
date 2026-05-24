@@ -6,3 +6,20 @@ test-case-generator/frontend/node_modules/
 test-case-generator/frontend/dist/
 test-case-generator/frontend/build/
 test-case-generator/**/*.log
+
+# ==========================================
+# Playwright BDD Test Suite (Python)
+# ==========================================
+tests/venv/
+tests/.venv/
+tests/reports/
+tests/__pycache__/
+tests/.pytest_cache/
+tests/**/__pycache__/
+tests/**/*.pyc
+
+# Generated fixture files — run `python create_fixtures.py` to recreate
+tests/fixtures/sample_valid.pdf
+tests/fixtures/sample_valid.png
+tests/fixtures/sample_valid.jpg
+tests/fixtures/sample_oversized.pdf
