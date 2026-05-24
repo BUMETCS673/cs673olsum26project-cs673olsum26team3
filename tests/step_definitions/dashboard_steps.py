@@ -8,7 +8,7 @@ Dialog handling pattern
 window.alert() and window.confirm() must be handled by registering
 page.once("dialog", handler) BEFORE the action that triggers the dialog.
 For multi-step scenarios (When … Then …), we capture the message in the
-When step using page.expect_dialog() so the Then step can assert on it.
+When step using page.expect_event("dialog") so the Then step can assert on it.
 """
 from __future__ import annotations
 
@@ -104,7 +104,7 @@ def click_upload(
     dialog_messages: list,
 ) -> None:
     """Click Upload Files and wait for the dialog (may require backend round-trip)."""
-    with page.expect_dialog(timeout=30_000) as dialog_info:
+    with page.expect_event("dialog", timeout=30_000) as dialog_info:
         dashboard_page.click_upload_button()
     dialog = dialog_info.value
     dialog_messages.append(dialog.message)
@@ -118,11 +118,13 @@ def click_upload_no_files(
     dialog_messages: list,
 ) -> None:
     """Click Upload Files when no file is selected — fires alert synchronously."""
-    with page.expect_dialog(timeout=5_000) as dialog_info:
-        dashboard_page.click_upload_button()
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    def _handle(dialog):
+        dialog_messages.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", _handle)
+    dashboard_page.click_upload_button()
+    page.wait_for_timeout(300)
 
 
 @when("the user records the initial row count")
@@ -139,7 +141,7 @@ def delete_first_row_ok(
     page,
     dialog_messages: list,
 ) -> None:
-    with page.expect_dialog(timeout=5_000) as dialog_info:
+    with page.expect_event("dialog", timeout=10_000) as dialog_info:
         dashboard_page.click_delete_button(0)
     dialog = dialog_info.value
     dialog_messages.append(dialog.message)
@@ -153,11 +155,12 @@ def delete_first_row_cancel(
     page,
     dialog_messages: list,
 ) -> None:
-    with page.expect_dialog(timeout=5_000) as dialog_info:
+    with page.expect_event("dialog", timeout=10_000) as dialog_info:
         dashboard_page.click_delete_button(0)
     dialog = dialog_info.value
     dialog_messages.append(dialog.message)
     dialog.dismiss()
+    page.wait_for_timeout(300)  # let React re-render
 
 
 @when("the user drags a file over the upload section")

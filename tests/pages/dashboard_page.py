@@ -136,8 +136,9 @@ class DashboardPage:
     def delete_all_documents(self) -> None:
         """Delete every document, accepting each confirmation dialog."""
         while self.table_rows.count() > 0:
-            self.page.once("dialog", lambda d: d.accept())
-            self.table_rows.nth(0).locator("button.btn-delete").click()
+            with self.page.expect_event("dialog", timeout=10_000) as dialog_info:
+                self.table_rows.nth(0).locator("button.btn-delete").click()
+            dialog_info.value.accept()
             # Wait for React to re-render after state update
             self.page.wait_for_timeout(400)
 

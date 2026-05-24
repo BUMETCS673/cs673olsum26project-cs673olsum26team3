@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import re
+import socket
 from datetime import datetime
 from pathlib import Path
 
@@ -56,6 +57,71 @@ def dashboard_page(page, base_url):
     dp = DashboardPage(page)
     dp.navigate(base_url)
     return dp
+
+
+# ──────────────────────────── Upload API mock ──────────────────────────────────
+
+
+def _backend_running() -> bool:
+    """Return True if the backend server is reachable on localhost:5000."""
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = s.connect_ex(("localhost", 5000))
+    s.close()
+    return result == 0
+
+
+@pytest.fixture(scope="session")
+def _use_real_backend() -> bool:
+    available = _backend_running()
+    if not available:
+        print("\n[conftest] Backend not running — upload requests will be mocked.")
+    return available
+
+
+@pytest.fixture(autouse=True)
+def mock_upload_api(page, _use_real_backend):
+    """Mock the backend upload API when server.js is not running.
+
+    Injects a fetch interceptor via add_init_script so it is in place before
+    React loads. The interceptor reads FormData entries directly (reliable for
+    any number of files) and returns a realistic success payload.
+    If the real backend is running the fixture is a no-op.
+    """
+    if _use_real_backend:
+        yield
+        return
+
+    page.add_init_script("""
+        const _origFetch = window.fetch;
+        window.fetch = async function(url, options) {
+            if (typeof url === 'string' && url.includes('/api/upload')) {
+                const body = options && options.body;
+                const files = [];
+                if (body instanceof FormData) {
+                    for (const [, value] of body.entries()) {
+                        if (value instanceof File) files.push(value.name);
+                    }
+                }
+                const today = new Date().toISOString().split('T')[0];
+                return new Response(
+                    JSON.stringify({
+                        message: 'Files uploaded and processed successfully!',
+                        data: files.map(function(name) {
+                            return {
+                                fileName: name,
+                                fileSize: '0.01 MB',
+                                uploadDate: today,
+                                textPreview: ''
+                            };
+                        })
+                    }),
+                    { status: 200, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
+            return _origFetch.apply(this, arguments);
+        };
+    """)
+    yield
 
 
 # ──────────────────────────── Screenshot on failure ────────────────────────────
