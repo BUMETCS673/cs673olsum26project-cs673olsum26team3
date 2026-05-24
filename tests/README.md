@@ -93,6 +93,7 @@ All commands below are run from the `tests/` directory with the virtualenv activ
 ### Run the full suite
 
 ```powershell
+.\venv\Scripts\Activate.ps1
 pytest
 ```
 
@@ -128,6 +129,50 @@ pytest --headed
 ```powershell
 pytest --headed --slowmo=500
 ```
+
+---
+
+## Headless vs Headed Mode
+
+By default, tests run in **headless** mode — the browser runs invisibly in the background. This is faster and is the right choice for CI/CD pipelines.
+
+**Headed** mode opens a real browser window so you can watch the test execute step by step. Use it when a test is failing and you need to see what's happening on screen.
+
+### Quick reference
+
+| Goal | Command |
+|------|---------|
+| Normal run (headless) | `pytest` |
+| Watch the browser | `pytest --headed` |
+| Watch slowly (500 ms between actions) | `pytest --headed --slowmo=500` |
+| Watch one failing test | `pytest --headed -k "test name"` |
+| Use Firefox instead of Chromium | `pytest --headed --browser=firefox` |
+
+### Debugging a failing test
+
+1. Activate the virtualenv: `.\venv\Scripts\Activate.ps1`
+2. Run only the failing scenario in headed + slow motion:
+   ```powershell
+   pytest --headed --slowmo=500 -k "name of failing scenario"
+   ```
+3. Watch the browser — the window stays open until the step fails, then closes.
+4. Check `reports/screenshots/` for the auto-captured failure screenshot.
+5. Check `reports/report.html` for the full run report with the screenshot embedded.
+
+### Making headed mode the default (optional)
+
+If you want every `pytest` run to open a browser window, add `--headed` to `pytest.ini`:
+
+```ini
+[pytest]
+addopts =
+    --html=reports/report.html
+    --self-contained-html
+    -v
+    --headed
+```
+
+> **Note:** Remove `--headed` from `pytest.ini` before pushing — CI runners have no display and will error.
 
 ---
 

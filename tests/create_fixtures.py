@@ -4,12 +4,14 @@ Run once before running tests:
     python create_fixtures.py
 
 Generates inside tests/fixtures/:
-  sample_valid.pdf  - minimal 1-page PDF (parseable by pdf-parse-fork)
-  sample_valid.png  - minimal 1x1 white PNG (processable by Tesseract)
-  sample_valid.jpg  - minimal 1x1 white JPEG (processable by Tesseract)
+  sample_valid.pdf      - minimal 1-page PDF (parseable by pdf-parse-fork)
+  sample_valid.png      - minimal 1x1 white PNG (processable by Tesseract)
+  sample_valid.jpg      - minimal 1x1 white JPEG (processable by Tesseract)
+  sample_oversized.pdf  - 21 MB blob for size-limit rejection tests
+  sample_invalid.exe    - zero-byte file with wrong extension
+  sample_invalid.mp3    - zero-byte file with wrong extension
 
-The oversized and invalid-extension files are already committed as part of
-the repository (created once via PowerShell during framework setup).
+All generated files are gitignored; run this script after cloning.
 """
 import base64
 import struct
@@ -124,28 +126,38 @@ def _create_minimal_jpg() -> bytes:
 def main() -> None:
     FIXTURES.mkdir(parents=True, exist_ok=True)
 
-    pdf_path = FIXTURES / "sample_valid.pdf"
-    if not pdf_path.exists():
-        pdf_path.write_bytes(_create_minimal_pdf())
-        print(f"Created {pdf_path} ({pdf_path.stat().st_size} bytes)")
-    else:
-        print(f"Already exists: {pdf_path}")
+    files = {
+        "sample_valid.pdf": _create_minimal_pdf,
+        "sample_valid.png": _create_minimal_png,
+        "sample_valid.jpg": _create_minimal_jpg,
+    }
 
-    png_path = FIXTURES / "sample_valid.png"
-    if not png_path.exists():
-        png_path.write_bytes(_create_minimal_png())
-        print(f"Created {png_path} ({png_path.stat().st_size} bytes)")
-    else:
-        print(f"Already exists: {png_path}")
+    for name, factory in files.items():
+        path = FIXTURES / name
+        if not path.exists():
+            path.write_bytes(factory())
+            print(f"Created {path} ({path.stat().st_size} bytes)")
+        else:
+            print(f"Already exists: {path}")
 
-    jpg_path = FIXTURES / "sample_valid.jpg"
-    if not jpg_path.exists():
-        jpg_path.write_bytes(_create_minimal_jpg())
-        print(f"Created {jpg_path} ({jpg_path.stat().st_size} bytes)")
+    # 21 MB blob — content doesn't matter, only size and extension
+    oversized = FIXTURES / "sample_oversized.pdf"
+    if not oversized.exists():
+        oversized.write_bytes(bytes(21 * 1024 * 1024))
+        print(f"Created {oversized} ({oversized.stat().st_size} bytes)")
     else:
-        print(f"Already exists: {jpg_path}")
+        print(f"Already exists: {oversized}")
 
-    print("\nFixtures ready.")
+    # Zero-byte invalid-extension files
+    for name in ("sample_invalid.exe", "sample_invalid.mp3"):
+        path = FIXTURES / name
+        if not path.exists():
+            path.write_bytes(b"")
+            print(f"Created {path} (0 bytes)")
+        else:
+            print(f"Already exists: {path}")
+
+    print("\nAll fixtures ready.")
 
 
 if __name__ == "__main__":
