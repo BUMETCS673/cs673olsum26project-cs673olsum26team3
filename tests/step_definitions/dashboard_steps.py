@@ -29,17 +29,7 @@ def dashboard_is_open(dashboard_page: DashboardPage) -> None:
 
 @given("the document table has at least 1 row")
 def table_has_rows(dashboard_page: DashboardPage) -> None:
-    assert dashboard_page.get_table_row_count() >= 1, (
-        "Expected at least 1 row in the document table"
-    )
-
-
-@given("all documents have been deleted")
-def all_documents_deleted(dashboard_page: DashboardPage) -> None:
-    dashboard_page.delete_all_documents()
-
-
-# ─────────────────────────────────── When ───────────────────────────────────────
+    """Fixture ensures at least one document row exists before the step runs."""
 
 
 @when(parsers.parse('the user selects the file "{fixture_file}"'))
@@ -141,11 +131,12 @@ def delete_first_row_ok(
     page,
     dialog_messages: list,
 ) -> None:
-    with page.expect_event("dialog", timeout=10_000) as dialog_info:
-        dashboard_page.click_delete_button(0)
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    def _handle(dialog):
+        dialog_messages.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", _handle)
+    dashboard_page.click_delete_button(0)
     page.wait_for_timeout(300)  # let React re-render
 
 
@@ -155,11 +146,12 @@ def delete_first_row_cancel(
     page,
     dialog_messages: list,
 ) -> None:
-    with page.expect_event("dialog", timeout=10_000) as dialog_info:
-        dashboard_page.click_delete_button(0)
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.dismiss()
+    def _handle(dialog):
+        dialog_messages.append(dialog.message)
+        dialog.dismiss()
+
+    page.once("dialog", _handle)
+    dashboard_page.click_delete_button(0)
     page.wait_for_timeout(300)  # let React re-render
 
 

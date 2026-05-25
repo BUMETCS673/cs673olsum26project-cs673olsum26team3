@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-import socket
+import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -63,11 +63,21 @@ def dashboard_page(page, base_url):
 
 
 def _backend_running() -> bool:
-    """Return True if the backend server is reachable on localhost:5000."""
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    result = s.connect_ex(("localhost", 5000))
-    s.close()
-    return result == 0
+    """Return True only if server.js is healthy (HTTP 200 on /api/health or /api/upload OPTIONS).
+
+    A plain TCP connect is not enough — another process may occupy port 5000.
+    We do a real HTTP probe so the mock is activated whenever the backend
+    isn't actually serving upload requests correctly.
+    """
+    try:
+        req = urllib.request.Request(
+            "http://localhost:5000/api/upload",
+            method="OPTIONS",
+        )
+        with urllib.request.urlopen(req, timeout=2) as resp:
+            return resp.status < 500
+    except Exception:
+        return False
 
 
 @pytest.fixture(scope="session")
