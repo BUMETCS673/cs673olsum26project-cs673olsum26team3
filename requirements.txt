@@ -10,7 +10,7 @@ pymongo==4.6.2
 # ==============================================================================
 # MAIN BACKEND LIBRARIES (Node.js Environment)
 # ==============================================================================
-express==5.2.1 (Web framework to build the API server on port 5000)
+express==5.2.1 (Web framework to build the API server)
 cors==2.8.6 (Allows the React frontend to communicate with the Node.js API)
 multer==2.1.1 (Handles and filters multi-file uploads with a strict 20MB size limit)
 pdf-parse-fork==1.2.0 (Extracts raw text data from uploaded .pdf files)
