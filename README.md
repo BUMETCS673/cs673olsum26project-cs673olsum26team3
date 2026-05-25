@@ -14,4 +14,19 @@ Software companies, including developers, QA engineers, and product teams.
 Users upload product documents (PDFs, API specs, etc.), and the system uses AI to analyze them and generate test cases from a given user story.
 
 ## Technology Stack
-The system will be built using Django for the backend and web interface, MongoDB as the database, and Jira for agile project management. AI/ML tools will be integrated to enable automated document processing and natural language understanding for test case generation.
+
+### Frontend
+- **React** — UI component framework
+- **Vite** — build tool and dev server
+- **JavaScript**
+
+### Backend
+- **Node.js** — runtime environment
+- **Express.js** — web framework
+- **JavaScript**
+
+### Database
+- **MongoDB** — document storage
+
+### AI / Retrieval Pipeline
+- AI retrieval and generation pipeline for document processing and test case generation

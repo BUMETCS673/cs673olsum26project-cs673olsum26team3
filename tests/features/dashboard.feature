@@ -6,7 +6,7 @@ Feature: Document Dashboard
   Background:
     Given the Document Dashboard is open
 
-  # ─── Page Layout ──────────────────────────────────────── @management @smoke
+  # ─── Page Layout ──────────────────────────────────────── 
   @management @smoke
   Scenario: Page shows header and upload section on load
     Then the page header reads "Document Dashboard"
@@ -21,7 +21,7 @@ Feature: Document Dashboard
     And the table contains at least 1 row
     And each row has a filename, a date, a file size, and a Delete button
 
-  # ─── File Upload ───────────────────────────────────────── @upload @smoke
+  # ─── File Upload ─────────────────────────────────────────
   @upload @smoke
   Scenario Outline: Successful upload of valid document types
     When the user selects the file "<fixture_file>"
@@ -56,7 +56,7 @@ Feature: Document Dashboard
     And the document table contains a row with filename "sample_valid.png"
     And the document table contains a row with filename "sample_valid.jpg"
 
-  # ─── Validation ────────────────────────────────────────────── @validation
+  # ─── Validation ────────────────────────────────────────────── 
   @validation
   Scenario: Upload zone shows accepted formats and size hint
     Then the upload zone hint reads "Maximum 10 files, up to 20MB each (.pdf, .png, .jpg, .jpeg)"
@@ -85,7 +85,7 @@ Feature: Document Dashboard
     And a preview shows "sample_valid.pdf" and its size in MB
     And "sample_invalid.exe" does not appear in the preview
 
-  # ─── Document Management ───────────────────────────────────── @management
+  # ─── Document Management ───────────────────────────────────── 
   @management @smoke
   Scenario: Deleting a document with confirmation removes it from the table
     Given the document table has at least 1 row
@@ -106,7 +106,7 @@ Feature: Document Dashboard
     Then the text "No documents available. Please upload files." is visible
     And the document table is not visible
 
-  # ─── Drag and Drop ─────────────────────────────────────────── @drag_drop
+  # ─── Drag and Drop ───────────────────────────────────────────
   @drag_drop
   Scenario: Dragging a file over the upload zone adds the dragging CSS class
     When the user drags a file over the upload section
