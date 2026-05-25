@@ -15,10 +15,10 @@ tests/
 │   └── dashboard_page.py       ← DashboardPage — all UI interactions
 ├── step_definitions/
 │   └── dashboard_steps.py      ← @given/@when/@then mapped to DashboardPage
-├── fixtures/                   ← Static test-data files
+├── fixtures/                   ← Static test-data files (add manually)
 │   ├── sample_valid.pdf/png/jpg
-│   ├── sample_invalid.exe/mp3  ← wrong extension (zero bytes)
-│   └── sample_oversized.pdf    ← 21 MB blob for size-limit testing
+│   ├── sample_invalid.exe/mp3  ← wrong extension
+│   └── sample_oversized.pdf    ← file > 20 MB for size-limit testing
 ├── reports/                    ← Auto-generated (gitignored)
 │   ├── report.html
 │   └── screenshots/
@@ -59,14 +59,20 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-### 4. Generate sample fixture files (first time only)
+### 4. Add fixture files
 
-```powershell
-python create_fixtures.py
-```
+Place the following test files in the `fixtures/` directory before running the suite:
 
-This creates `fixtures/sample_valid.pdf`, `fixtures/sample_valid.png`, and  
-`fixtures/sample_valid.jpg`. The invalid and oversized fixtures are already present.
+| File | Purpose |
+|------|---------|
+| `sample_valid.pdf` | Valid PDF with readable text |
+| `sample_valid.png` | Valid PNG processable by Tesseract |
+| `sample_valid.jpg` | Valid JPEG processable by Tesseract |
+| `sample_oversized.pdf` | Any file > 20 MB (triggers size-limit rejection) |
+| `sample_invalid.exe` | Any file with an unsupported extension |
+| `sample_invalid.mp3` | Any file with an unsupported extension |
+
+Run `python create_fixtures.py` once to ensure the `fixtures/` directory exists.
 
 ### 5. Start the application
 
@@ -212,7 +218,7 @@ Raw PNG files are saved to `reports/screenshots/`.
 | Problem | Fix |
 |---------|-----|
 | `ConnectionError` / page blank | Ensure backend (`node server.js`) and frontend (`npm run dev`) are running |
-| `FileNotFoundError: fixture` | Run `python create_fixtures.py` to create missing fixture files |
+| `FileNotFoundError: fixture` | Add the required files to `fixtures/` (see Setup step 4) |
 | `ModuleNotFoundError: pages` | Run `pytest` from the `tests/` directory, not from the repo root |
-| OCR upload test fails | The `sample_valid.jpg/png` files are minimal; Tesseract returns empty text but should not error. If it does, replace with a real image containing text |
-| PDF upload test fails | Replace `sample_valid.pdf` with a real PDF containing readable text |
+| OCR upload test fails | Ensure `sample_valid.jpg` and `sample_valid.png` contain readable text that Tesseract can process |
+| PDF upload test fails | Ensure `sample_valid.pdf` contains readable text |

@@ -1,6 +1,7 @@
 """Page Object for the Document Dashboard (single-page React app)."""
 from __future__ import annotations
 
+import base64
 from pathlib import Path
 
 from playwright.sync_api import Page
@@ -182,19 +183,23 @@ class DashboardPage:
     def drop_file_onto_upload_zone(self, file_path: str) -> None:
         """Simulate a file drop using a JS DataTransfer object.
 
-        Creates a File of the correct name and size in the browser and dispatches
-        a synthetic 'drop' event on the upload form. This triggers React's
-        handleDrop handler and the validateAndFilterFiles logic.
+        Reads real file bytes from disk (base64-encoded) so the backend receives
+        a valid file — a zeroed Uint8Array is rejected by OCR/parsing when the
+        real backend is running.
         """
         file_name = Path(file_path).name
-        file_size = Path(file_path).stat().st_size
         file_mime = self._MIME_TYPES.get(Path(file_path).suffix.lower(), "application/octet-stream")
+        file_b64 = base64.b64encode(Path(file_path).read_bytes()).decode("ascii")
 
         self.page.evaluate(
             """
-            ([fileName, fileSize, fileMime]) => {
-                const arr = new Uint8Array(fileSize);
-                const blob = new Blob([arr], { type: fileMime });
+            ([fileName, fileB64, fileMime]) => {
+                const binary = atob(fileB64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { type: fileMime });
                 const file = new File([blob], fileName, { type: fileMime });
                 const dt = new DataTransfer();
                 dt.items.add(file);
@@ -206,5 +211,5 @@ class DashboardPage:
                 }));
             }
         """,
-            [file_name, file_size, file_mime],
+            [file_name, file_b64, file_mime],
         )

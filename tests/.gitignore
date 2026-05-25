@@ -5,8 +5,3 @@ __pycache__/
 venv/
 .venv/
 
-# Generated fixture files — run `python create_fixtures.py` to recreate
-fixtures/sample_valid.pdf
-fixtures/sample_valid.png
-fixtures/sample_valid.jpg
-fixtures/sample_oversized.pdf

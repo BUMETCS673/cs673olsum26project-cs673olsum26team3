@@ -32,6 +32,12 @@ def table_has_rows(dashboard_page: DashboardPage) -> None:
     """Fixture ensures at least one document row exists before the step runs."""
 
 
+@given("all documents have been deleted")
+def all_docs_deleted(dashboard_page: DashboardPage, page) -> None:
+    dashboard_page.delete_all_documents()
+    page.wait_for_timeout(300)
+
+
 @when(parsers.parse('the user selects the file "{fixture_file}"'))
 def select_single_file(
     dashboard_page: DashboardPage,
