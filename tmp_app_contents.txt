@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { Trash2, Upload, FileText } from 'lucide-react';
 import './App.css';
 
@@ -151,7 +151,7 @@ function App() {
     });
 
     try {
-      const response = await fetch('http://localhost:5001/api/upload', {
+      const response = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -182,19 +182,40 @@ function App() {
 
   if (!user) {
     return (
-      <div className="login-page">
-        <div className="login-card">
-          <h1 className="login-title">SpecCheck Login</h1>
-          <p className="login-subtitle">Enter your username and password to access the document dashboard.</p>
+      <div
+        className="login-page"
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: '#f8f5f5',
+          padding: '24px'
+        }}
+      >
+        <div
+          className="login-card"
+          style={{
+            width: '100%',
+            maxWidth: '420px',
+            background: '#b6b6b6',
+            padding: '32px',
+            borderRadius: '16px',
+            boxShadow: '0 16px 40px rgba(255,255,255,0.08)',
+            color: '#fff'
+          }}
+        >
+          <h1 style={{ marginBottom: '24px', color: '#3f0227', textAlign: 'center' }}>SpecCheck Login</h1>
+          <p style={{ marginBottom: '24px', color: '#444', textAlign: 'center' }}>Enter your username and password to access the document dashboard.</p>
 
           {loginError && (
-            <div className="login-error">
+            <div style={{ marginBottom: '18px', color: '#f3ebeb', background: '#d15252', padding: '12px', borderRadius: '8px' }}>
               {loginError}
             </div>
           )}
 
           <form onSubmit={handleLoginSubmit}>
-            <label htmlFor="username" className="login-label">Username</label>
+            <label htmlFor="username" style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Username</label>
             <input
               id="username"
               type="text"
@@ -202,10 +223,10 @@ function App() {
               onChange={(e) => setLoginUsername(e.target.value)}
               placeholder="Enter username"
               required
-              className="login-input"
+              style={{ width: '100%', padding: '12px 14px', marginBottom: '18px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
 
-            <label htmlFor="password" className="login-label">Password</label>
+            <label htmlFor="password" style={{ display: 'block', marginBottom: '8px', fontWeight: '600' }}>Password</label>
             <input
               id="password"
               type="password"
@@ -213,13 +234,22 @@ function App() {
               onChange={(e) => setLoginPassword(e.target.value)}
               placeholder="Enter password"
               required
-              className="login-input"
+              style={{ width: '100%', padding: '12px 14px', marginBottom: '24px', borderRadius: '8px', border: '1px solid #d1d5db' }}
             />
 
             <button
               type="submit"
               disabled={loginLoading}
-              className="btn-login"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: 'none',
+                borderRadius: '8px',
+                background: '#3f0227',
+                color: '#000',
+                fontSize: '16px',
+                cursor: 'pointer'
+              }}
             >
               {loginLoading ? 'Signing in...' : 'Sign In'}
             </button>
@@ -233,10 +263,10 @@ function App() {
     <div className="dashboard-container">
       <header className="dashboard-header">
         <div>
-          <h1 style={{ color: 'black' }}>Document Dashboard</h1>
+          <h1>Document Dashboard</h1>
           <p>Manage your uploaded documents and system files</p>
         </div>
-        <button className="btn-logout" onClick={handleLogout}>
+        <button className="btn-logout" onClick={handleLogout} style={{ padding: '10px 18px', borderRadius: '8px', border: 'none', background: '#3f0227', color: '#fff', cursor: 'pointer' }}>
           Logout
         </button>
       </header>
@@ -258,6 +288,7 @@ function App() {
               multiple 
               onChange={handleFileChange} 
               className="file-input-field"
+              style={{ margin: '15px 0', display: 'block', marginLeft: 'auto', marginRight: 'auto' }}
             />
             {/* Show specific names and sizes of selected files before uploading */}
             {selectedFiles.length > 0 && (
@@ -267,12 +298,12 @@ function App() {
                   {selectedFiles.map((file, index) => {
                     const sizeInMB = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
                     return (
-                      <li key={index} className="preview-item preview-item-row">
-                        <div className="preview-item-content">
+                      <li key={index} className="preview-item" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <FileText size={14} className="preview-file-icon" />
                           <span>{file.name}</span>
                         </div>
-                        <span className="preview-item-size">
+                        <span style={{ fontSize: '12px', color: '#666', fontWeight: '500', paddingLeft: '15px' }}>
                           {sizeInMB}
                         </span>
                       </li>
@@ -312,7 +343,7 @@ function App() {
               {documents.map((doc) => (
                 <tr key={doc.id}>
                   <td className="file-name-cell">
-                    <div className="file-name-wrapper">
+                    <div className="file-name-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <FileText size={18} className="file-icon" style={{ color: '#17a2b8' }} />
                       <span>{doc.fileName}</span>
                     </div>
@@ -340,7 +371,4 @@ function App() {
 }
 
 export default App;
-
-
-
 
