@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const multer = require('multer');
 const pdfParse = require('pdf-parse-fork');
 const Tesseract = require('tesseract.js'); // Added for Scenario 2 (OCR)
@@ -6,11 +6,13 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 5000;
+const PORT = 5001;
 
-// Allow frontend connection
 app.use(cors());
 app.use(express.json());
+
+// Register authentication routes
+require('./api/login')(app);
 
 // Set up memory storage for file upload
 const storage = multer.memoryStorage();
@@ -107,3 +109,6 @@ app.post('/api/upload', (req, res, next) => {
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
+
+
+
