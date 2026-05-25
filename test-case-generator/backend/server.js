@@ -4,6 +4,7 @@ const pdfParse = require('pdf-parse-fork');
 const Tesseract = require('tesseract.js'); // Added for Scenario 2 (OCR)
 const cors = require('cors');
 const path = require('path');
+const login = require('./api/login');
 
 const app = express();
 const PORT = 5001;
