@@ -1,0 +1,333 @@
+:root {
+  --primary: #6D28D9;
+  --primary-dark: #4C1D95;
+  --primary-light: #EDE9FE;
+  --background: #F8F7FC;
+  --card: #FFFFFF;
+  --text: #1F2937;
+  --border: #D8D6E5;
+}
+
+body {
+  background: #ffffff;
+}
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f5f5;
+  padding: 24px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
+  color: #111827;
+}
+
+.login-title {
+  margin-bottom: 24px;
+  color: #1f2937;
+  text-align: center;
+}
+
+.login-subtitle {
+  margin-bottom: 24px;
+  color: #4b5563;
+  text-align: center;
+}
+
+.login-error {
+  margin-bottom: 18px;
+  color: #f8fafc;
+  background: #ef4444;
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.login-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.login-input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+}
+
+.login-input:last-of-type {
+  margin-bottom: 24px;
+}
+
+.btn-login {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #3f0227;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.btn-login:hover {
+  background: #5b0d46;
+}
+
+.btn-logout {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  background: #3f0227;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.btn-logout:hover {
+  background: #5b0d46;
+}
+
+/* Layout Container */
+.dashboard-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: sans-serif;
+  color: var(--text);
+  background: var(--background);
+  min-height: 100vh;
+}
+
+/* Header Styles */
+.dashboard-header {
+  margin-bottom: 30px;
+  border-bottom: 2px solid #eee;
+  padding-bottom: 10px;
+}
+
+.dashboard-header p {
+  color: #777;
+}
+
+/* Upload Section */
+.upload-section {
+  background: #f9f9f9;
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  padding: 30px;
+  text-align: center;
+  margin-bottom: 50px;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Drag and Drop Hover Effect */
+.upload-section.dragging {
+  background: #e3f2fd;
+  border-color: #007bff;
+  transform: scale(1.01);
+}
+
+.table-section {
+  margin-top: 30px;
+  margin-bottom: 40px;
+}
+
+.upload-zone {
+  margin-bottom: 15px;
+}
+
+.upload-icon {
+  color: #666;
+  margin-bottom: 10px;
+}
+
+.upload-hint {
+  display: block;
+  font-size: 12px;
+  color: #888;
+  margin-top: 5px;
+}
+
+.btn-upload {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-upload:hover {
+  background: #0056b3;
+}
+
+/* Table Styles */
+.document-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: fixed; /* Keeps column widths fixed and aligned */
+  margin-top: 20px;
+  min-width: 720px;
+}
+
+.document-table th,
+.document-table td {
+  border: 1px solid #ddd;
+  padding: 14px 16px;
+  text-align: left;
+  vertical-align: middle;
+  box-sizing: border-box;
+}
+
+.document-table th {
+  background-color: #f4f4f4;
+  font-weight: 600;
+}
+
+/* Center align the Action column header and cell data */
+.document-table th:last-child,
+.document-table tbody td:last-child {
+  text-align: center;
+}
+
+.document-table th:first-child,
+.document-table td:first-child {
+  padding-left: 16px;
+}
+
+.document-table tbody tr {
+  background-color: #ffffff;
+}
+
+.document-table tbody tr td {
+  border-bottom: 1px solid #ddd;
+}
+
+/* File Name Cell and Wrapper */
+.document-table .file-name-cell {
+  /* Keep standard table-cell display here to prevent layout errors */
+}
+
+.document-table .file-name-wrapper {
+  display: flex;         /* Use flexbox inside the div instead of td */
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.document-table .file-name-wrapper .file-icon {
+  color: #17a2b8;
+  flex-shrink: 0;
+}
+
+/* Delete Button */
+.btn-delete {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-delete:hover {
+  background: #bd2130;
+}
+
+/* No Data Style */
+.no-data {
+  color: #666;
+  font-style: italic;
+}
+
+/* Selected files preview area inside the upload zone */
+.selected-files-preview {
+  margin: 15px auto;
+  max-width: 400px;
+  text-align: left;
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+/* Header text for the selected files list */
+.preview-title {
+  margin: 0 0 8px 0;
+  font-weight: bold;
+  color: #28a745;
+  font-size: 14px;
+}
+
+/* Reset standard list spacing and bullets */
+.preview-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 120px;
+  overflow-y: auto; /* Adds a scrollbar if you select too many files */
+}
+
+/* Individual file row alignment inside the preview list */
+.preview-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #555;
+  padding: 4px 0;
+  border-bottom: 1px dashed #f0f0f0;
+}
+
+/* Last item in the preview list does not need a bottom border */
+.preview-item:last-child {
+  border-bottom: none;
+}
+
+/* Icon style for files waiting to be uploaded */
+.preview-file-icon {
+  color: #28a745;
+  flex-shrink: 0;
+}
+
+.file-input-field {
+  margin: 15px auto;
+  display: block;
+}
+
+.preview-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.preview-item-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-item-size {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+  padding-left: 15px;
+}
