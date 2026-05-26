@@ -48,6 +48,14 @@ class DashboardPage:
         self.page.goto(base_url)
         self.header_title.wait_for(state="visible")
 
+    def login(self, username: str, password: str) -> None:
+        self.page.locator("#username").fill(username)
+        self.page.locator("#password").fill(password)
+        self.page.locator("button.btn-login").click()
+        self.page.locator("h1").filter(has_text="Document Dashboard").wait_for(
+            state="visible", timeout=10_000
+        )
+
     # ──────────────────────────────── Header ────────────────────────────────
 
     def get_header_title(self) -> str:

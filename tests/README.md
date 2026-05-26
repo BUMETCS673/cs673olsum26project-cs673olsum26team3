@@ -74,12 +74,32 @@ Place the following test files in the `fixtures/` directory before running the s
 
 Run `python create_fixtures.py` once to ensure the `fixtures/` directory exists.
 
-### 5. Start the application
+> Fixture files are required before step 5. Add them manually or generate placeholders with the helper script.
+
+### 5. Configure login credentials
+
+The `Given the user is logged in` step reads credentials from environment variables so the hardcoded values never live in source control.
+
+```powershell
+# Copy the example file and edit it with the real credentials
+Copy-Item .env.example .env
+notepad .env
+```
+
+`.env` is git-ignored. If you skip this step, the tests fall back to the defaults (`admin` / `pass`) that match the project's dev backend.
+
+You can also pass the variables inline without a file:
+
+```powershell
+$env:TEST_USERNAME="admin"; $env:TEST_PASSWORD="pass"; pytest
+```
+
+### 6. Start the application
 
 Open **two** terminals and keep them running:
 
 ```powershell
-# Terminal 1 — backend (http://localhost:5000)
+# Terminal 1 — backend (http://localhost:5001)
 cd ..\test-case-generator\backend
 npm install
 node server.js
@@ -89,6 +109,8 @@ cd ..\test-case-generator\frontend
 npm install
 npm run dev
 ```
+
+> **Note:** When the backend is not running, the test suite activates a fetch mock that intercepts `/api/login` and `/api/upload` so upload and login scenarios still pass without a live server.
 
 ---
 
@@ -218,6 +240,7 @@ Raw PNG files are saved to `reports/screenshots/`.
 | Problem | Fix |
 |---------|-----|
 | `ConnectionError` / page blank | Ensure backend (`node server.js`) and frontend (`npm run dev`) are running |
+| Login step fails / "Cannot connect to auth server" | Check `.env` credentials or set `TEST_USERNAME`/`TEST_PASSWORD` env vars (see Setup step 5) |
 | `FileNotFoundError: fixture` | Add the required files to `fixtures/` (see Setup step 4) |
 | `ModuleNotFoundError: pages` | Run `pytest` from the `tests/` directory, not from the repo root |
 | OCR upload test fails | Ensure `sample_valid.jpg` and `sample_valid.png` contain readable text that Tesseract can process |

@@ -1,6 +1,7 @@
 """Root conftest: fixtures, screenshot-on-failure hook, and step-definition registration."""
 from __future__ import annotations
 
+import os
 import re
 import urllib.request
 from datetime import datetime
@@ -25,6 +26,18 @@ SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 @pytest.fixture(scope="session")
 def base_url() -> str:
     return "http://localhost:5173"
+
+
+@pytest.fixture(scope="session")
+def test_credentials() -> dict:
+    """Login credentials read from env vars TEST_USERNAME / TEST_PASSWORD.
+
+    Set these in a local tests/.env file (git-ignored) or in your CI secrets.
+    """
+    return {
+        "username": os.environ.get("TEST_USERNAME", "admin"),
+        "password": os.environ.get("TEST_PASSWORD", "pass"),
+    }
 
 
 @pytest.fixture(scope="session")
@@ -63,15 +76,15 @@ def dashboard_page(page, base_url):
 
 
 def _backend_running() -> bool:
-    """Return True only if server.js is healthy (HTTP 200 on /api/health or /api/upload OPTIONS).
+    """Return True only if server.js is healthy (HTTP 200 on /api/upload OPTIONS).
 
-    A plain TCP connect is not enough — another process may occupy port 5000.
-    We do a real HTTP probe so the mock is activated whenever the backend
-    isn't actually serving upload requests correctly.
+    server.js listens on port 5001. A plain TCP connect is not enough —
+    another process may occupy the port.  We do a real HTTP probe so the mock
+    is activated whenever the backend isn't actually serving upload requests.
     """
     try:
         req = urllib.request.Request(
-            "http://localhost:5000/api/upload",
+            "http://localhost:5001/api/upload",
             method="OPTIONS",
         )
         with urllib.request.urlopen(req, timeout=2) as resp:
@@ -104,6 +117,12 @@ def mock_upload_api(page, _use_real_backend):
     page.add_init_script("""
         const _origFetch = window.fetch;
         window.fetch = async function(url, options) {
+            if (typeof url === 'string' && url.includes('/api/login')) {
+                return new Response(
+                    JSON.stringify({ user: { username: 'testuser', name: 'Test User' } }),
+                    { status: 200, headers: { 'Content-Type': 'application/json' } }
+                );
+            }
             if (typeof url === 'string' && url.includes('/api/upload')) {
                 const body = options && options.body;
                 const files = [];
