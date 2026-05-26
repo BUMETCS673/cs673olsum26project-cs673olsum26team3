@@ -16,3 +16,19 @@ services:
       - /app/node_modules
     stdin_open: true
     tty: true
+
+  test-runner:
+    build:
+      context: ../tests
+      dockerfile: Dockerfile
+    environment:
+      - BASE_URL=http://frontend-service:5173
+      - BACKEND_URL=http://backend-service:5001
+    volumes:
+      - ../tests:/tests
+      - ../tests/reports:/tests/reports
+    depends_on:
+      - backend-service
+      - frontend-service
+    profiles:
+      - test
