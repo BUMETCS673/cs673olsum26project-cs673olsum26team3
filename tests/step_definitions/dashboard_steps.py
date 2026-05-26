@@ -22,6 +22,11 @@ from pages.dashboard_page import DashboardPage
 # ─────────────────────────────────── Given ──────────────────────────────────────
 
 
+@given("the user is logged in")
+def user_is_logged_in(dashboard_page: DashboardPage, test_credentials: dict) -> None:
+    dashboard_page.login(test_credentials["username"], test_credentials["password"])
+
+
 @given("the Document Dashboard is open")
 def dashboard_is_open(dashboard_page: DashboardPage) -> None:
     """Navigation is handled by the dashboard_page fixture."""
@@ -99,7 +104,7 @@ def click_upload(
     page,
     dialog_messages: list,
 ) -> None:
-    """Click Upload Files and wait for the dialog (may require backend round-trip)."""
+    """Click Upload Files and wait for the resulting alert (up to 30 s for backend)."""
     with page.expect_event("dialog", timeout=30_000) as dialog_info:
         dashboard_page.click_upload_button()
     dialog = dialog_info.value
@@ -267,8 +272,11 @@ def check_filename_in_table(
     page,
     fixture_file: str,
 ) -> None:
-    # Wait up to 5 s for the new row to appear (backend processing time)
-    page.wait_for_timeout(500)
+    # Wait up to 10 s for React to commit the state update and render the new row.
+    # A fixed sleep is unreliable; wait_for retries until the element is visible.
+    page.locator(".file-name-wrapper span").filter(has_text=fixture_file).wait_for(
+        state="visible", timeout=10_000
+    )
     assert dashboard_page.is_filename_in_table(fixture_file), (
         f"Filename '{fixture_file}' not found in the document table"
     )

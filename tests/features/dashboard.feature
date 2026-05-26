@@ -4,7 +4,8 @@ Feature: Document Dashboard
   So that I can upload, view, and delete system files
 
   Background:
-    Given the Document Dashboard is open
+    Given the user is logged in
+    And the Document Dashboard is open
 
   # ─── Page Layout ──────────────────────────────────────── 
   @management @smoke
