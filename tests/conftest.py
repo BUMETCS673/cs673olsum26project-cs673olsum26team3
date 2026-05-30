@@ -61,7 +61,7 @@ def row_count_store() -> dict:
 
 
 @pytest.fixture
-def dashboard_page(page, base_url):
+def dashboard_page(page, base_url, mock_upload_api):
     """Navigate to the dashboard and return a DashboardPage instance.
 
     Each test function gets a fresh browser page (pytest-playwright default)
@@ -88,7 +88,7 @@ def _backend_running() -> bool:
             f"{backend_url}/api/upload",
             method="OPTIONS",
         )
-        with urllib.request.urlopen(req, timeout=2) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status < 500
     except Exception:
         return False

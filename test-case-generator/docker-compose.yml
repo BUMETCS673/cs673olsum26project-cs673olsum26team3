@@ -11,6 +11,8 @@ services:
     build: ./frontend
     ports:
       - "5173:5173"
+    environment:
+      - VITE_BACKEND_URL=http://backend-service:5001
     volumes:
       - ./frontend:/app
       - /app/node_modules
