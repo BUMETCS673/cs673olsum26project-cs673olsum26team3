@@ -30,8 +30,8 @@ class DashboardPage:
         self.page = page
 
         # Locators (lazy — resolved on first use)
-        self.header_title = page.locator("h1")
-        self.header_subtitle = page.locator(".dashboard-header p")
+        self.header_title = page.locator("h2.page-title")
+        self.header_subtitle = page.locator("p.page-subtitle")
         self.upload_section = page.locator(".upload-section")
         self.upload_form = page.locator(".upload-form")
         self.file_input = page.locator("input.file-input-field")
@@ -46,13 +46,13 @@ class DashboardPage:
 
     def navigate(self, base_url: str = BASE_URL) -> None:
         self.page.goto(base_url)
-        self.header_title.wait_for(state="visible")
+        self.page.locator("button.btn-login").wait_for(state="visible")
 
     def login(self, username: str, password: str) -> None:
         self.page.locator("#username").fill(username)
         self.page.locator("#password").fill(password)
         self.page.locator("button.btn-login").click()
-        self.page.locator("h1").filter(has_text="Document Dashboard").wait_for(
+        self.page.locator("h2.page-title").wait_for(
             state="visible", timeout=10_000
         )
 

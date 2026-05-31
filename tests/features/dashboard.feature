@@ -10,8 +10,8 @@ Feature: Document Dashboard
   # ─── Page Layout ──────────────────────────────────────── 
   @management @smoke
   Scenario: Page shows header and upload section on load
-    Then the page header reads "Document Dashboard"
-    And the sub-header reads "Manage your uploaded documents and system files"
+    Then the page header reads "Documents"
+    And the sub-header reads "Upload and manage your system specification files"
     And the upload section is visible
     And the Upload Files button is visible
 
@@ -60,7 +60,7 @@ Feature: Document Dashboard
   # ─── Validation ────────────────────────────────────────────── 
   @validation
   Scenario: Upload zone shows accepted formats and size hint
-    Then the upload zone hint reads "Maximum 10 files, up to 20MB each (.pdf, .png, .jpg, .jpeg)"
+    Then the upload zone hint reads "Maximum 10 files, up to 20 MB each (.pdf, .png, .jpg, .jpeg)"
 
   @validation
   Scenario Outline: Unsupported file format is rejected before upload
