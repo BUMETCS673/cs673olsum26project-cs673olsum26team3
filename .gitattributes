@@ -1,0 +1,5 @@
+# Force LF line endings for shell scripts (CRLF breaks Linux containers)
+*.sh text eol=lf
+
+# Default: let Git decide for everything else
+* text=auto
