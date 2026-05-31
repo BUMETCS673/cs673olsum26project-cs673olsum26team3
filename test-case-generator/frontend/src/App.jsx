@@ -1,9 +1,11 @@
 ﻿import React, { useState } from 'react';
 import { Trash2, Upload, FileText } from 'lucide-react';
+import TestCaseDashboard from './TestCaseDashboard';
 import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [currentView, setCurrentView] = useState('documents');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -60,6 +62,7 @@ function App() {
 
   const handleLogout = () => {
     setUser(null);
+    setCurrentView('documents');
     setLoginUsername('');
     setLoginPassword('');
     setLoginError('');
@@ -232,14 +235,39 @@ function App() {
   return (
     <div className="dashboard-container">
       <header className="dashboard-header">
-        <div>
-          <h1 style={{ color: 'black' }}>Document Dashboard</h1>
-          <p>Manage your uploaded documents and system files</p>
+        <div className="header-top">
+          <div>
+            <h1 style={{ color: 'black' }}>SpecCheck</h1>
+            <p>
+              {currentView === 'documents'
+                ? 'Manage your uploaded documents and system files'
+                : 'Monitor and manage your generated test cases'}
+            </p>
+          </div>
+          <button className="btn-logout" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
-        <button className="btn-logout" onClick={handleLogout}>
-          Logout
-        </button>
+        <nav className="dashboard-nav">
+          <button
+            className={`nav-tab ${currentView === 'documents' ? 'active' : ''}`}
+            onClick={() => setCurrentView('documents')}
+          >
+            Documents
+          </button>
+          <button
+            className={`nav-tab ${currentView === 'testcases' ? 'active' : ''}`}
+            onClick={() => setCurrentView('testcases')}
+          >
+            Test Cases
+          </button>
+        </nav>
       </header>
+
+      {currentView === 'testcases' ? (
+        <TestCaseDashboard />
+      ) : (
+        <>
 
       {/* Upload Box with dynamic dragging class */}
       <section className={`upload-section ${isDragging ? 'dragging' : ''}`}>
@@ -335,6 +363,9 @@ function App() {
           </table>
         )}
       </section>
+
+        </>
+      )}
     </div>
   );
 }
