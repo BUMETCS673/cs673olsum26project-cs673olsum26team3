@@ -7,5 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN chmod +x wait_and_run.sh
-CMD ["./wait_and_run.sh"]
+CMD ["/bin/sh", "wait_and_run.sh"]
