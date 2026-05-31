@@ -25,7 +25,7 @@ SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 
 @pytest.fixture(scope="session")
 def base_url() -> str:
-    return "http://localhost:5173"
+    return os.environ.get("BASE_URL", "http://localhost:5173")
 
 
 @pytest.fixture(scope="session")
@@ -61,7 +61,7 @@ def row_count_store() -> dict:
 
 
 @pytest.fixture
-def dashboard_page(page, base_url):
+def dashboard_page(page, base_url, mock_upload_api):
     """Navigate to the dashboard and return a DashboardPage instance.
 
     Each test function gets a fresh browser page (pytest-playwright default)
@@ -82,12 +82,13 @@ def _backend_running() -> bool:
     another process may occupy the port.  We do a real HTTP probe so the mock
     is activated whenever the backend isn't actually serving upload requests.
     """
+    backend_url = os.environ.get("BACKEND_URL", "http://localhost:5001")
     try:
         req = urllib.request.Request(
-            "http://localhost:5001/api/upload",
+            f"{backend_url}/api/upload",
             method="OPTIONS",
         )
-        with urllib.request.urlopen(req, timeout=2) as resp:
+        with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status < 500
     except Exception:
         return False
