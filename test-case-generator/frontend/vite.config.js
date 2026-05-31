@@ -8,4 +8,8 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
   },
+  server: {
+    host: true,
+    allowedHosts: true,
+  },
 })

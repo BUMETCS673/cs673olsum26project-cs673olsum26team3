@@ -114,6 +114,77 @@ npm run dev
 
 ---
 
+## Running Tests with Docker (Recommended)
+
+Docker runs the full stack — backend, frontend, and test runner — automatically in isolated containers. No local Python, Node, or browser install required.
+
+### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed and running
+
+### 1. Navigate to the `test-case-generator` directory
+
+```powershell
+cd test-case-generator
+```
+
+### 2. Build and run all services + tests
+
+```powershell
+docker compose --profile test up --build
+```
+
+This will:
+1. Build the backend, frontend, and test-runner Docker images
+2. Start the backend (port `5001`) and frontend (port `5173`)
+3. Wait until both services are ready
+4. Run the full pytest suite automatically
+5. Exit when tests finish
+
+### 3. View the test report
+
+After the run, the HTML report is written to your local machine at:
+
+```
+tests/reports/report.html
+```
+
+Open it:
+
+```powershell
+Start-Process "..\tests\reports\report.html"
+```
+
+### Useful Docker commands
+
+| Goal | Command (run from `test-case-generator/`) |
+|------|------------------------------------------|
+| Run tests (build images first) | `docker compose --profile test up --build` |
+| Run tests (skip rebuild) | `docker compose --profile test up` |
+| Run tests and remove containers after | `docker compose --profile test run --rm test-runner` |
+| Stop all containers | `docker compose --profile test down` |
+| View live test output only | `docker compose --profile test logs -f test-runner` |
+
+### Port reference
+
+| Service | URL |
+|---------|-----|
+| Frontend (React/Vite) | `http://localhost:5173` |
+| Backend (Node/Express) | `http://localhost:5001` |
+| Test runner | No port — runs and exits |
+
+### Troubleshooting Docker runs
+
+| Problem | Fix |
+|---------|-----|
+| `pytest==X.X.X` conflicts with `pytest-playwright` | Pin `pytest` to `8.2.0` in `requirements.txt` — `pytest-playwright==0.5.0` requires `pytest<9.0.0` |
+| Tests fail with login timeout | Vite may still be compiling — the runner waits 15 s after startup; rebuild with `--build` if it persists |
+| `wait_and_run.sh: not found` | Ensure `tests/wait_and_run.sh` is committed to git (`git add tests/wait_and_run.sh`) |
+| Port already in use | Stop any locally running backend/frontend before running Docker |
+| `Cannot connect to auth server` | Backend container may not have started in time; re-run with `--build` |
+
+---
+
 ## Running Tests
 
 All commands below are run from the `tests/` directory with the virtualenv active.

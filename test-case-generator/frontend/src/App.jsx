@@ -3,6 +3,8 @@ import { Trash2, Upload, FileText } from 'lucide-react';
 import TestCaseDashboard from './TestCaseDashboard';
 import './App.css';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
+
 function App() {
   const [user, setUser] = useState(null);
   const [currentView, setCurrentView] = useState('documents');
@@ -34,7 +36,7 @@ function App() {
     }
     setLoginLoading(true);
     try {
-      const response = await fetch('http://localhost:5001/api/login', {
+      const response = await fetch(`${BACKEND_URL}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword }),
@@ -111,7 +113,10 @@ function App() {
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append('documents', file));
     try {
-      const response = await fetch('http://localhost:5001/api/upload', { method: 'POST', body: formData });
+      const response = await fetch(`${BACKEND_URL}/api/upload`, {
+        method: 'POST',
+        body: formData,
+      });
       const result = await response.json();
       if (response.ok) {
         alert(result.message);
