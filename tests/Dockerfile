@@ -7,5 +7,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN chmod +x wait_and_run.sh
+RUN sed -i 's/\r$//' wait_and_run.sh && chmod +x wait_and_run.sh
 CMD ["./wait_and_run.sh"]
