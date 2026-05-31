@@ -69,6 +69,33 @@ Every code save (commit) must start with one of these words so the team knows ho
 
 ---
 
+## 🧪 Running Unit Tests
+
+Frontend unit tests use **Vitest** and **React Testing Library**.
+
+```bash
+cd test-case-generator/frontend
+npm test
+```
+
+To run in watch mode during development:
+
+```bash
+npm run test:watch
+```
+
+The test suite covers the **Test Case Dashboard** feature:
+
+| Test | What it checks |
+| :--- | :--- |
+| Initial render | All 10 mock test cases are displayed and stats bar shows correct counts |
+| Search by title | Typing a keyword filters cards to only matching titles |
+| Status filter | Selecting a status (e.g. Draft) shows only cards with that status |
+| Archive toggle | Clicking Archive on an Active card switches the button to Restore |
+| Delete with confirm | Confirming deletion removes the card and decreases the total count |
+
+---
+
 ## 🔗 Project Links
 
 *   **GitHub Repository:** [Team 3 Code](https://github.com/BUMETCS673/cs673olsum26project-cs673olsum26team3)

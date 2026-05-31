@@ -60,10 +60,10 @@ const MOCK_TEST_CASES = [
   },
   {
     id: '9',
-    title: 'TC-009: Search documents by keyword',
+    title: 'TC-009: Search test cases by keyword',
     createdAt: '2026-05-23',
     status: 'Active',
-    content: 'Given a user on the test case dashboard with multiple test cases, when they type a keyword into the search bar, then only test cases whose titles or content match that keyword are displayed.',
+    content: 'Given a user on the test case dashboard with multiple test cases, when they type a keyword into the search bar, then only test cases whose titles or content match are displayed.',
   },
   {
     id: '10',
@@ -74,12 +74,6 @@ const MOCK_TEST_CASES = [
   },
 ];
 
-const STATUS_STYLE = {
-  Active: { background: '#dcfce7', color: '#15803d', border: '1px solid #86efac' },
-  Draft: { background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047' },
-  Archived: { background: '#f3f4f6', color: '#6b7280', border: '1px solid #d1d5db' },
-};
-
 export default function TestCaseDashboard() {
   const [testCases, setTestCases] = useState(MOCK_TEST_CASES);
   const [searchQuery, setSearchQuery] = useState('');
@@ -87,12 +81,11 @@ export default function TestCaseDashboard() {
   const [editingCase, setEditingCase] = useState(null);
   const [editForm, setEditForm] = useState({ title: '', status: 'Active', content: '' });
 
+  const count = (status) => testCases.filter((tc) => tc.status === status).length;
+
   const filtered = testCases.filter((tc) => {
     const q = searchQuery.toLowerCase();
-    const matchesSearch =
-      !q ||
-      tc.title.toLowerCase().includes(q) ||
-      tc.content.toLowerCase().includes(q);
+    const matchesSearch = !q || tc.title.toLowerCase().includes(q) || tc.content.toLowerCase().includes(q);
     const matchesStatus = statusFilter === 'All' || tc.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -106,9 +99,7 @@ export default function TestCaseDashboard() {
   const handleArchiveToggle = (id) => {
     setTestCases((prev) =>
       prev.map((tc) =>
-        tc.id === id
-          ? { ...tc, status: tc.status === 'Archived' ? 'Active' : 'Archived' }
-          : tc
+        tc.id === id ? { ...tc, status: tc.status === 'Archived' ? 'Active' : 'Archived' } : tc
       )
     );
   };
@@ -128,25 +119,53 @@ export default function TestCaseDashboard() {
     setEditingCase(null);
   };
 
+  const statusKey = (s) => s.toLowerCase();
+
   return (
-    <div className="tc-dashboard">
+    <>
+      {/* Page Header */}
+      <div className="tc-page-header">
+        <h2 className="tc-page-title">Test Cases</h2>
+        <p className="tc-page-subtitle">Monitor and manage your generated test cases</p>
+      </div>
+
+      {/* Stats Bar */}
+      <div className="tc-stats">
+        <div className="tc-stat">
+          <span className="tc-stat-num">{testCases.length}</span>
+          <span className="tc-stat-lbl">Total</span>
+        </div>
+        <div className="tc-stat tc-stat--active">
+          <span className="tc-stat-num">{count('Active')}</span>
+          <span className="tc-stat-lbl">Active</span>
+        </div>
+        <div className="tc-stat tc-stat--draft">
+          <span className="tc-stat-num">{count('Draft')}</span>
+          <span className="tc-stat-lbl">Draft</span>
+        </div>
+        <div className="tc-stat tc-stat--archived">
+          <span className="tc-stat-num">{count('Archived')}</span>
+          <span className="tc-stat-lbl">Archived</span>
+        </div>
+      </div>
+
+      {/* Toolbar */}
       <div className="tc-toolbar">
         <div className="tc-search-wrapper">
-          <Search size={16} className="tc-search-icon" />
+          <Search size={15} className="tc-search-icon" />
           <input
             type="text"
-            placeholder="Search by title or content..."
+            placeholder="Search by title or content…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="tc-search-input"
             aria-label="Search test cases"
           />
         </div>
-
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="tc-status-filter"
+          className="tc-filter-select"
           aria-label="Filter by status"
         >
           <option value="All">All Statuses</option>
@@ -154,92 +173,66 @@ export default function TestCaseDashboard() {
           <option value="Draft">Draft</option>
           <option value="Archived">Archived</option>
         </select>
-
-        <span className="tc-count">
-          {filtered.length} test case{filtered.length !== 1 ? 's' : ''}
+        <span className="tc-result-count">
+          {filtered.length} result{filtered.length !== 1 ? 's' : ''}
         </span>
       </div>
 
+      {/* Card Grid */}
       {filtered.length === 0 ? (
-        <p className="no-data">No test cases found matching your search.</p>
+        <div className="tc-empty">
+          <ClipboardList size={40} className="tc-empty-icon" />
+          <p>No test cases found matching your search.</p>
+        </div>
       ) : (
-        <div className="tc-table-wrapper">
-          <table className="tc-table">
-            <colgroup>
-              <col style={{ width: '42%' }} />
-              <col style={{ width: '14%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '32%' }} />
-            </colgroup>
-            <thead>
-              <tr>
-                <th>Title</th>
-                <th>Created Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((tc) => (
-                <tr key={tc.id}>
-                  <td className="tc-title-cell">
-                    <div className="tc-title-wrapper">
-                      <ClipboardList size={15} className="tc-icon" />
-                      <span>{tc.title}</span>
-                    </div>
-                  </td>
-                  <td>{tc.createdAt}</td>
-                  <td>
-                    <span className="tc-status-badge" style={STATUS_STYLE[tc.status]}>
-                      {tc.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="tc-actions">
-                      <button
-                        className="btn-tc btn-edit"
-                        onClick={() => handleEditOpen(tc)}
-                        title="Edit test case"
-                      >
-                        <Edit2 size={13} />
-                        <span>Edit</span>
-                      </button>
+        <div className="tc-card-grid">
+          {filtered.map((tc) => (
+            <div key={tc.id} className={`tc-card tc-card--${statusKey(tc.status)}`}>
+              <div className="tc-card-top">
+                <span className={`tc-badge tc-badge--${statusKey(tc.status)}`}>{tc.status}</span>
+                <span className="tc-card-date">{tc.createdAt}</span>
+              </div>
 
-                      <button
-                        className={`btn-tc ${tc.status === 'Archived' ? 'btn-restore' : 'btn-archive'}`}
-                        onClick={() => handleArchiveToggle(tc.id)}
-                        title={tc.status === 'Archived' ? 'Restore test case' : 'Archive test case'}
-                      >
-                        {tc.status === 'Archived' ? (
-                          <>
-                            <RotateCcw size={13} />
-                            <span>Restore</span>
-                          </>
-                        ) : (
-                          <>
-                            <Archive size={13} />
-                            <span>Archive</span>
-                          </>
-                        )}
-                      </button>
+              <h3 className="tc-card-title">{tc.title}</h3>
+              <p className="tc-card-excerpt">{tc.content}</p>
 
-                      <button
-                        className="btn-tc btn-delete"
-                        onClick={() => handleDelete(tc.id, tc.title)}
-                        title="Delete test case"
-                      >
-                        <Trash2 size={13} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+              <div className="tc-card-footer">
+                <div className="tc-card-actions">
+                  <button
+                    className="btn-card btn-card--edit"
+                    onClick={() => handleEditOpen(tc)}
+                    title="Edit test case"
+                  >
+                    <Edit2 size={12} /> Edit
+                  </button>
+
+                  <button
+                    className={`btn-card ${tc.status === 'Archived' ? 'btn-card--restore' : 'btn-card--archive'}`}
+                    onClick={() => handleArchiveToggle(tc.id)}
+                    title={tc.status === 'Archived' ? 'Restore test case' : 'Archive test case'}
+                  >
+                    {tc.status === 'Archived' ? (
+                      <><RotateCcw size={12} /> Restore</>
+                    ) : (
+                      <><Archive size={12} /> Archive</>
+                    )}
+                  </button>
+
+                  <button
+                    className="btn-card btn-card--delete"
+                    onClick={() => handleDelete(tc.id, tc.title)}
+                    title="Delete test case"
+                  >
+                    <Trash2 size={12} /> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
+      {/* Edit Modal */}
       {editingCase && (
         <div className="modal-overlay" onClick={() => setEditingCase(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -250,7 +243,7 @@ export default function TestCaseDashboard() {
               id="edit-title"
               type="text"
               value={editForm.title}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, title: e.target.value }))}
+              onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
               className="modal-input"
             />
 
@@ -258,7 +251,7 @@ export default function TestCaseDashboard() {
             <select
               id="edit-status"
               value={editForm.status}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, status: e.target.value }))}
+              onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
               className="modal-select"
             >
               <option value="Active">Active</option>
@@ -270,22 +263,18 @@ export default function TestCaseDashboard() {
             <textarea
               id="edit-content"
               value={editForm.content}
-              onChange={(e) => setEditForm((prev) => ({ ...prev, content: e.target.value }))}
+              onChange={(e) => setEditForm((p) => ({ ...p, content: e.target.value }))}
               className="modal-textarea"
               rows={5}
             />
 
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setEditingCase(null)}>
-                Cancel
-              </button>
-              <button className="btn-save" onClick={handleEditSave}>
-                Save Changes
-              </button>
+              <button className="btn-cancel" onClick={() => setEditingCase(null)}>Cancel</button>
+              <button className="btn-save" onClick={handleEditSave}>Save Changes</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
