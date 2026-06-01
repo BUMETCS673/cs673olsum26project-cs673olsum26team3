@@ -10,14 +10,19 @@ from pathlib import Path
 import pytest
 
 from pages.dashboard_page import DashboardPage
+from pages.login_page import LoginPage
 
 # Register step definitions as a pytest plugin so their @given/@when/@then
 # decorators are discovered before scenario collection.
-pytest_plugins = ["step_definitions.dashboard_steps"]
+pytest_plugins = [
+    "step_definitions.dashboard_steps",
+    "step_definitions.login_steps",
+]
 
 TESTS_DIR = Path(__file__).parent
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
+
 
 
 # ─────────────────────────────────── Fixtures ──────────────────────────────────
@@ -27,6 +32,13 @@ SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 def base_url() -> str:
     return os.environ.get("BASE_URL", "http://localhost:5173")
 
+@pytest.fixture
+def login_page(page, base_url):
+    """Navigate to the login page and return a LoginPage instance."""
+    lp = LoginPage(page)
+    lp.navigate(base_url)
+    return lp
+
 
 @pytest.fixture(scope="session")
 def test_credentials() -> dict:
@@ -34,10 +46,7 @@ def test_credentials() -> dict:
 
     Set these in a local tests/.env file (git-ignored) or in your CI secrets.
     """
-    return {
-        "username": os.environ.get("TEST_USERNAME", "admin"),
-        "password": os.environ.get("TEST_PASSWORD", "pass"),
-    }
+    return {"username": "admin", "password": "pass"}
 
 
 @pytest.fixture(scope="session")
@@ -70,7 +79,6 @@ def dashboard_page(page, base_url, mock_upload_api):
     dp = DashboardPage(page)
     dp.navigate(base_url)
     return dp
-
 
 # ──────────────────────────── Upload API mock ──────────────────────────────────
 

@@ -3,7 +3,22 @@ import { Trash2, Upload, FileText } from 'lucide-react';
 import TestCaseDashboard from './TestCaseDashboard';
 import './App.css';
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
+// AI-USAGE SUMMARY (Function: handleLoginSubmit)
+// Tools: GitHub Copilot
+// Overall AI Contribution: ~70% (function-level; overall file ~15%)
+// AI-Assisted Areas: Manual validation logic design, error branching
+// Human Contributions: Integration with existing component state and backend calls
+// Areas of AI Influence:
+//   - Field validation order (both empty -> username only -> password only)
+// Modifications:
+//   - Error message specificity 
+//   - Replaced browser-native 'required' attribute validation with JavaScript logic
+//   - Integrated with existing loginLoading state and fetch call
+// Verification: Manual browser testing confirms field-specific errors display
+//              Playwright BDD tests validate error messages match expected text
+//              All three error paths tested independently
+// Confidence: High
+
 
 function App() {
   const [user, setUser] = useState(null);
@@ -30,13 +45,26 @@ function App() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError('');
-    if (!loginUsername || !loginPassword) {
+
+    if (!loginUsername && !loginPassword) {
       setLoginError('Username and password are required.');
       return;
     }
+
+    if (!loginUsername) {
+      setLoginError('Username is required.');
+      return;
+    }
+
+    if (!loginPassword) {
+      setLoginError('Password is required.');
+      return;
+    }
+
+
     setLoginLoading(true);
     try {
-      const response = await fetch(`${BACKEND_URL}/api/login`, {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword }),
@@ -113,7 +141,7 @@ function App() {
     const formData = new FormData();
     selectedFiles.forEach((file) => formData.append('documents', file));
     try {
-      const response = await fetch(`${BACKEND_URL}/api/upload`, {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
@@ -155,7 +183,6 @@ function App() {
               value={loginUsername}
               onChange={(e) => setLoginUsername(e.target.value)}
               placeholder="Enter username"
-              required
               className="login-input"
             />
 
@@ -166,7 +193,6 @@ function App() {
               value={loginPassword}
               onChange={(e) => setLoginPassword(e.target.value)}
               placeholder="Enter password"
-              required
               className="login-input"
             />
 
