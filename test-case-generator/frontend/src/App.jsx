@@ -18,7 +18,6 @@ import './App.css';
 //              All three error paths tested independently
 // Confidence: High
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL ?? 'http://localhost:5001';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -66,7 +65,7 @@ function App() {
     setLoginLoading(true);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/login`, {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: loginUsername, password: loginPassword }),
@@ -179,7 +178,7 @@ function App() {
     });
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/upload`, {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
