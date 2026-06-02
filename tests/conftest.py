@@ -11,12 +11,14 @@ import pytest
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
+from pages.testCaseDashboard_page import TestCaseDashboardPage
 
 # Register step definitions as a pytest plugin so their @given/@when/@then
 # decorators are discovered before scenario collection.
 pytest_plugins = [
     "step_definitions.dashboard_steps",
     "step_definitions.login_steps",
+    "step_definitions.testCaseDashboard_steps",
 ]
 
 TESTS_DIR = Path(__file__).parent
@@ -79,6 +81,18 @@ def dashboard_page(page, base_url, mock_upload_api):
     dp = DashboardPage(page)
     dp.navigate(base_url)
     return dp
+
+
+@pytest.fixture
+def test_case_dashboard_page(page) -> TestCaseDashboardPage:
+    """Return a TestCaseDashboardPage wrapping the active browser page.
+
+    Navigation to the Test Cases view is handled by the
+    'the TestCase Dashboard is open' Background step via dashboard_page.
+    This fixture only provides element-interaction wrappers.
+    """
+    return TestCaseDashboardPage(page)
+
 
 # ──────────────────────────── Upload API mock ──────────────────────────────────
 

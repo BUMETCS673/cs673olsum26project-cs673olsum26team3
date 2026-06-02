@@ -56,6 +56,11 @@ class DashboardPage:
             state="visible", timeout=10_000
         )
 
+    def navigate_to_test_cases(self) -> None:
+        """Click the Test Cases nav link and wait for the TC dashboard header."""
+        self.page.locator("button.navbar-link").filter(has_text="Test Cases").click()
+        self.page.locator("h2.tc-page-title").wait_for(state="visible", timeout=5_000)
+
     # ──────────────────────────────── Header ────────────────────────────────
 
     def get_header_title(self) -> str:

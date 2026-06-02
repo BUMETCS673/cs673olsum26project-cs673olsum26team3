@@ -26,6 +26,7 @@ services:
     environment:
       - BASE_URL=http://frontend-service:5173
       - BACKEND_URL=http://backend-service:5001
+      - PYTEST_ARGS
     volumes:
       - ../tests:/tests
       - ../tests/reports:/tests/reports

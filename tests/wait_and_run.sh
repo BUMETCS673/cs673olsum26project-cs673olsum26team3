@@ -44,4 +44,4 @@ done
 echo "Waiting 15s for Vite to finish compiling..."
 sleep 15
 
-exec pytest --tb=short -v
+exec pytest --tb=short -v ${PYTEST_ARGS:-}
