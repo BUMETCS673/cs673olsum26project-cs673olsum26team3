@@ -68,6 +68,98 @@ Every code save (commit) must start with one of these words so the team knows ho
 *   Your code can only merge into the `development` branch if it **passes all tests** and gets at least **1 approval** from a teammate.
 
 
+## 📁 Project Structure
+
+```
+cs673olsum26project-cs673olsum26team3/
+│
+├── .github/
+│   └── workflows/
+│       └── test-automation.yml        ← GitHub Actions CI/CD pipeline
+│
+├── app/                               ← Django backend (early prototype)
+│   ├── manage.py
+│   └── speccheck/
+│       ├── settings.py
+│       ├── urls.py
+│       ├── views.py
+│       └── wsgi.py
+│
+├── doc/                               ← Project documentation
+│   ├── CS673_SDD_team3.docx           ← Software Design Document
+│   ├── CS673_STD_team3.docx           ← Software Test Document
+│   ├── CS673_SPPP_team3.docx          ← Project Plan
+│   ├── CS673_MeetingMinutes_team3.docx
+│   └── CS673_ProgressReport_team3.xlsx
+│
+├── demo/
+│   └── Iteration1DemoLink.md
+│
+├── test-case-generator/               ← Main application (React + Node.js)
+│   ├── docker-compose.yml             ← Orchestrates backend, frontend, and test runner
+│   │
+│   ├── backend/                       ← Node.js / Express API
+│   │   ├── Dockerfile
+│   │   ├── server.js                  ← Login and file upload API endpoints
+│   │   ├── package.json
+│   │   └── eng.traineddata            ← Tesseract OCR language data
+│   │
+│   └── frontend/                      ← React / Vite SPA
+│       ├── Dockerfile
+│       ├── vite.config.js
+│       ├── package.json
+│       ├── index.html
+│       └── src/
+│           ├── App.jsx                ← App shell, login form, Document Dashboard
+│           ├── App.css                ← Global styles
+│           ├── TestCaseDashboard.jsx  ← Test Case card grid, search, archive, delete
+│           ├── Login.jsx
+│           ├── main.jsx
+│           └── test/                  ← Vitest unit tests
+│               ├── setup.js
+│               └── TestCaseDashboard.test.jsx
+│
+├── tests/                             ← Playwright BDD end-to-end test suite
+│   ├── Dockerfile                     ← Test runner container
+│   ├── wait_and_run.sh                ← Readiness probe + pytest launcher
+│   ├── conftest.py                    ← Shared fixtures and screenshot-on-failure hook
+│   ├── pytest.ini                     ← pytest / pytest-bdd configuration
+│   ├── requirements.txt               ← Python dependencies
+│   ├── README.md                      ← Full test setup and usage guide
+│   │
+│   ├── features/                      ← Gherkin BDD specifications
+│   │   ├── dashboard.feature          ← Document Dashboard scenarios
+│   │   ├── login.feature              ← Login scenarios
+│   │   └── testCaseDashboard.feature  ← TestCase Dashboard scenarios
+│   │
+│   ├── pages/                         ← Page Object Model classes
+│   │   ├── dashboard_page.py          ← Document Dashboard interactions
+│   │   ├── login_page.py              ← Login form interactions
+│   │   └── testCaseDashboard_page.py  ← TestCase card grid interactions
+│   │
+│   ├── step_definitions/              ← @given/@when/@then implementations
+│   │   ├── dashboard_steps.py
+│   │   ├── login_steps.py
+│   │   └── testCaseDashboard_steps.py
+│   │
+│   ├── fixtures/                      ← Static files used by upload/validation tests
+│   │   ├── sample_valid.pdf/png/jpg
+│   │   ├── sample_invalid.exe/mp3
+│   │   └── sample_oversized.pdf
+│   │
+│   ├── test_dashboard.py              ← Entry point for dashboard.feature
+│   ├── test_login.py                  ← Entry point for login.feature
+│   └── test_testCaseDashboard.py      ← Entry point for testCaseDashboard.feature
+│
+├── Dockerfile                         ← Root-level Django container
+├── docker-compose.yml                 ← Root-level Django + MongoDB compose
+├── requirements.txt                   ← Python dependencies (Django layer)
+├── README.md                          ← This file
+└── team.md                            ← Team roster and roles
+```
+
+---
+
 ## 🧪 Running Unit Tests
 
 Frontend unit tests use **Vitest** and **React Testing Library**.

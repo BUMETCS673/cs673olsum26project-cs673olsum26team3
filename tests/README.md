@@ -1,6 +1,6 @@
-# Playwright BDD Test Automation — Document Dashboard
+# Playwright BDD Test Automation — SpecCheck
 
-End-to-end test suite for the **Document Dashboard** application.  
+End-to-end test suite for the **SpecCheck** application covering the Document Dashboard and TestCase Dashboard.  
 Stack: Python · Playwright · pytest-bdd (Gherkin BDD) · Page Object Model · pytest-html reports.
 
 ---
@@ -10,27 +10,47 @@ Stack: Python · Playwright · pytest-bdd (Gherkin BDD) · Page Object Model · 
 ```
 tests/
 ├── features/
-│   └── dashboard.feature       ← Gherkin scenarios (1 per page object)
+│   ├── dashboard.feature              ← Document Dashboard BDD scenarios
+│   ├── login.feature                  ← Login BDD scenarios
+│   └── testCaseDashboard.feature      ← TestCase Dashboard BDD scenarios
 ├── pages/
-│   └── dashboard_page.py       ← DashboardPage — all UI interactions
+│   ├── dashboard_page.py              ← DashboardPage — document upload, table, delete
+│   ├── login_page.py                  ← LoginPage — login form interactions
+│   └── testCaseDashboard_page.py      ← TestCaseDashboardPage — card grid, search
 ├── step_definitions/
-│   └── dashboard_steps.py      ← @given/@when/@then mapped to DashboardPage
-├── fixtures/                   ← Static test-data files (add manually)
+│   ├── dashboard_steps.py             ← @given/@when/@then for dashboard.feature
+│   ├── login_steps.py                 ← @given/@when/@then for login.feature
+│   └── testCaseDashboard_steps.py     ← @given/@when/@then for testCaseDashboard.feature
+├── fixtures/                          ← Static test-data files (add manually)
 │   ├── sample_valid.pdf/png/jpg
-│   ├── sample_invalid.exe/mp3  ← wrong extension
-│   └── sample_oversized.pdf    ← file > 20 MB for size-limit testing
-├── reports/                    ← Auto-generated (gitignored)
+│   ├── sample_invalid.exe/mp3         ← wrong extension
+│   └── sample_oversized.pdf           ← file > 20 MB for size-limit testing
+├── reports/                           ← Auto-generated (gitignored)
 │   ├── report.html
 │   └── screenshots/
-├── conftest.py                 ← Fixtures + screenshot-on-failure hook
-├── pytest.ini                  ← pytest / pytest-bdd configuration
-├── test_dashboard.py           ← scenarios() entry point
-├── create_fixtures.py          ← Helper to create valid sample files
+├── conftest.py                        ← Shared fixtures and screenshot-on-failure hook
+├── pytest.ini                         ← pytest / pytest-bdd configuration
+├── test_dashboard.py                  ← scenarios() entry point for dashboard
+├── test_testCaseDashboard.py          ← scenarios() entry point for testCaseDashboard
+├── create_fixtures.py                 ← Helper to create valid sample files
+├── wait_and_run.sh                    ← Docker readiness probe + pytest launcher
 └── requirements.txt
 ```
 
-**Pattern:** 1 Page class → 1 feature file → 1 step file.  
-Adding a new page = add `pages/new_page.py` + `features/new_page.feature` + `step_definitions/new_page_steps.py`.
+**Pattern:** 1 Page class → 1 feature file → 1 step file → 1 test entry point.  
+Adding a new page = add `pages/new_page.py` + `features/new_page.feature` + `step_definitions/new_page_steps.py` + `test_new_page.py`, then register the steps plugin in `conftest.py`.
+
+---
+
+## Feature Coverage
+
+### Document Dashboard (`dashboard.feature`)
+
+Tests the documents view of the app: login, page layout, file upload via file-input and drag-and-drop, file validation, and document delete. The production code under test is `test-case-generator/frontend/src/App.jsx` (documents section) and `test-case-generator/backend/server.js`.
+
+### TestCase Dashboard (`testCaseDashboard.feature`)
+
+Tests the test case card grid: page header, card layout, per-card elements (title, date, status badge, delete button), and keyword search filtering. The production code under test is `test-case-generator/frontend/src/TestCaseDashboard.jsx`.
 
 ---
 
@@ -141,7 +161,26 @@ This will:
 4. Run the full pytest suite automatically
 5. Exit when tests finish
 
-### 3. View the test report
+### 3. Run a single feature file (optional)
+
+Set `PYTEST_ARGS` before the command to target one feature at a time:
+
+```powershell
+# TestCase Dashboard only
+$env:PYTEST_ARGS="test_testCaseDashboard.py"; docker compose --profile test up --build
+
+# Document Dashboard only
+$env:PYTEST_ARGS="test_dashboard.py"; docker compose --profile test up --build
+
+# Only management scenarios across all features
+$env:PYTEST_ARGS="-m management"; docker compose --profile test up --build
+
+# Reset to run the full suite
+Remove-Item Env:PYTEST_ARGS
+docker compose --profile test up --build
+```
+
+### 4. View the test report
 
 After the run, the HTML report is written to your local machine at:
 
@@ -182,10 +221,11 @@ Start-Process "..\tests\reports\report.html"
 | `wait_and_run.sh: not found` | Ensure `tests/wait_and_run.sh` is committed to git (`git add tests/wait_and_run.sh`) |
 | Port already in use | Stop any locally running backend/frontend before running Docker |
 | `Cannot connect to auth server` | Backend container may not have started in time; re-run with `--build` |
+| `PYTEST_ARGS` ignored, all tests run | Ensure `- PYTEST_ARGS` is listed under `environment:` in `test-case-generator/docker-compose.yml` |
 
 ---
 
-## Running Tests
+## Running Tests Locally
 
 All commands below are run from the `tests/` directory with the virtualenv active.
 
@@ -194,6 +234,13 @@ All commands below are run from the `tests/` directory with the virtualenv activ
 ```powershell
 .\venv\Scripts\Activate.ps1
 pytest
+```
+
+### Run a single feature file
+
+```powershell
+pytest test_dashboard.py
+pytest test_testCaseDashboard.py
 ```
 
 ### Run only smoke tests (fast sanity check)
@@ -215,6 +262,7 @@ pytest -m drag_drop
 
 ```powershell
 pytest -k "Successful upload of valid document types"
+pytest -k "User can search for test cases by keyword"
 ```
 
 ### Run in headed mode (see the browser)
@@ -296,13 +344,13 @@ Raw PNG files are saved to `reports/screenshots/`.
 
 ## Scenario Tags
 
-| Tag | Scenarios |
-|-----|-----------|
-| `@smoke` | Core happy-path — must pass before a full suite run |
-| `@upload` | File upload via file-input |
-| `@validation` | Client-side format and size validation |
-| `@management` | Table display, delete with confirm/cancel, empty state |
-| `@drag_drop` | Drag-and-drop upload |
+| Tag | Feature | Scenarios |
+|-----|---------|-----------|
+| `@smoke` | Both | Core happy-path — must pass before a full suite run |
+| `@management` | Both | Page layout, table/card display, delete with confirm/cancel |
+| `@upload` | Document Dashboard | File upload via file-input |
+| `@validation` | Document Dashboard | Client-side format and size validation |
+| `@drag_drop` | Document Dashboard | Drag-and-drop upload |
 
 ---
 
@@ -316,3 +364,4 @@ Raw PNG files are saved to `reports/screenshots/`.
 | `ModuleNotFoundError: pages` | Run `pytest` from the `tests/` directory, not from the repo root |
 | OCR upload test fails | Ensure `sample_valid.jpg` and `sample_valid.png` contain readable text that Tesseract can process |
 | PDF upload test fails | Ensure `sample_valid.pdf` contains readable text |
+| TestCase Dashboard steps not found | Check that `step_definitions.testCaseDashboard_steps` is listed in `pytest_plugins` inside `conftest.py` |
