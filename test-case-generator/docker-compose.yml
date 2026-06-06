@@ -3,16 +3,12 @@ services:
     build: ./backend
     ports:
       - "5001:5001"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+    env_file:
+      - ./backend/.env
 
   frontend-service:
     build: ./frontend
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     stdin_open: true
     tty: true

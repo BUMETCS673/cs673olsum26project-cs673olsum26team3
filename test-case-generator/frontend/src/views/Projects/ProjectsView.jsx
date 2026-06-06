@@ -1,13 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import './ProjectsView.css';
-import { FolderOpen, FileText, TestTube, Plus, Trash2 } from 'lucide-react';
+import { FolderOpen, FileText, Eye, Plus, Trash2, X } from 'lucide-react';
 
 /**
  * ProjectsView Component
  * Renders the dashboard showing all available projects.
- * Code structure matches the provided ProjectsView.html template.
  */
 export default function ProjectsView({ projects, documents, onNavigate, onDeleteProject, onNewProject }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newProject, setNewProject] = useState({ name: '', description: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!newProject.name.trim()) return;
+    
+    const success = await onNewProject(newProject);
+    if (success) {
+      setIsModalOpen(false);
+      setNewProject({ name: '', description: '' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white">
       <main className="mx-auto max-w-7xl px-6 py-8">
@@ -19,78 +32,293 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
               <p className="text-sm text-gray-600">Manage your test generation projects</p>
             </div>
             <button 
-              onClick={onNewProject}
-              className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm text-white transition-colors hover:bg-gray-800 cursor-pointer"
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm text-white cursor-pointer"
+              style={{ transition: 'all 0.2s ease' }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = '#374151';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = '#000000';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
               <Plus size={16} />
               <span>New Project</span>
             </button>
           </div>
 
-          {/* Project Cards Grid */}
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => {
-              // Count documents related to this specific project
-              const docCount = documents.filter(doc => doc.projectId === project.id).length;
-
-              return (
+          {/* Project Cards Grid / Empty State */}
+          {projects.length === 0 ? (
+            <div 
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '80px 20px',
+                border: '2px dashed #e5e7eb',
+                borderRadius: '16px',
+                backgroundColor: '#f9fafb',
+                textAlign: 'center'
+              }}
+            >
+              <div style={{ backgroundColor: '#ffffff', padding: '16px', borderRadius: '50%', marginBottom: '20px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+                <FolderOpen size={48} className="text-gray-400" />
+              </div>
+              <h2 style={{ fontSize: '24px', fontWeight: '600', color: '#111827', marginBottom: '12px' }}>
+                Welcome to SpecCheck!
+              </h2>
+              <p style={{ fontSize: '16px', color: '#6b7280', maxWidth: '400px', marginBottom: '32px', lineHeight: '1.5' }}>
+                It looks like you don't have any projects yet. Create your first project to start generating AI-powered test cases.
+              </p>
+              <button 
+                onClick={() => setIsModalOpen(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  backgroundColor: '#000000',
+                  color: '#ffffff',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = '#374151';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = '#000000';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                }}
+              >
+                <Plus size={20} />
+                <span>Create Your First Project</span>
+              </button>
+            </div>
+          ) : (
+            <div 
+              className="grid gap-6" 
+              style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' 
+              }}
+            >
+              {projects.map((project) => (
                 <div 
-                  key={project.id} 
-                  className="group relative rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                  key={project._id || project.id}
+                  style={{
+                    backgroundColor: '#ffffff',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    transition: 'all 0.2s',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)',
+                    cursor: 'default'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.boxShadow = '0 10px 15px -3px rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.borderColor = '#d1d5db';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)';
+                    e.currentTarget.style.borderColor = '#e5e7eb';
+                  }}
                 >
-                  {/* Absolute positioned delete button, visible on hover */}
-                  <button 
-                    onClick={() => onDeleteProject(project.id)}
-                    className="absolute right-4 top-4 rounded-lg p-2 text-gray-400 opacity-0 transition-all hover:bg-gray-100 hover:text-red-600 group-hover:opacity-100 cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-
-                  <div className="mb-4">
-                    <div className="mb-2 flex items-center gap-2">
-                      <FolderOpen size={20} className="text-gray-700" />
-                      <h3 className="font-medium text-gray-900">{project.name}</h3>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                      <div style={{ backgroundColor: '#f3f4f6', padding: '12px', borderRadius: '10px' }}>
+                        <FolderOpen size={24} className="text-black" />
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm('Are you sure you want to delete this project?')) {
+                            onDeleteProject(project._id || project.id);
+                          }
+                        }}
+                        className="p-2 text-gray-400 hover:bg-red-50 rounded-lg cursor-pointer"
+                        style={{ border: 'none', background: 'transparent', transition: 'all 0.2s ease' }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.color = '#dc2626'; // text-red-600
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.color = '#9ca3af'; // text-gray-400
+                          e.currentTarget.style.transform = 'translateY(0)';
+                        }}
+                      >
+                        <Trash2 size={18} />
+                      </button>
                     </div>
-                    <p className="text-sm text-gray-600">{project.description || 'No description provided.'}</p>
+                    <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', marginBottom: '4px' }}>{project.name}</h3>
+                    <div style={{ display: 'flex', itemsCenter: 'center', gap: '4px', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Created:</span>
+                      <span style={{ fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>
+                        {project.createdAt ? new Date(project.createdAt).toLocaleDateString() : 'Recent'}
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '20px', lineHeight: '1.5', display: '-webkit-box', WebkitLineClamp: '2', WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {project.description || 'No description provided.'}
+                    </p>
                   </div>
-
-                  {/* Statistics Section */}
-                  <div className="mb-4 flex items-center gap-4 border-t border-gray-100 pt-4 text-sm text-gray-600">
-                    <div className="flex items-center gap-1">
+                  
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button 
+                      onClick={() => onNavigate(project._id || project.id, 'documents')}
+                      className="flex-1 flex items-center justify-center gap-2 text-white py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                      style={{ 
+                        border: 'none', 
+                        backgroundColor: '#000000',
+                        transition: 'all 0.2s ease' 
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#374151';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#000000';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
                       <FileText size={16} />
-                      <span>{docCount} docs</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <TestTube size={16} />
-                      <span>{project.testCount || 0} tests</span>
-                    </div>
-                  </div>
-
-                  {/* Navigation Actions */}
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => onNavigate(project.id, 'documents')}
-                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 cursor-pointer"
-                    >
-                      Documents
+                      <span>Documents</span>
                     </button>
                     <button 
-                      onClick={() => onNavigate(project.id, 'testcases')}
-                      className="flex-1 rounded-lg bg-gray-900 px-4 py-2 text-sm text-white transition-colors hover:bg-gray-800 cursor-pointer"
+                      onClick={() => onNavigate(project._id || project.id, 'testcases')}
+                      className="flex-1 flex items-center justify-center gap-2 text-white py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                      style={{ 
+                        border: 'none', 
+                        backgroundColor: '#2563eb',
+                        transition: 'all 0.2s ease' 
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#1d4ed8';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#2563eb';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
                     >
-                      View Tests
+                      <Eye size={16} />
+                      <span>View Tests</span>
                     </button>
-                  </div>
-
-                  <div className="mt-3 text-xs text-gray-400">
-                    Created {project.createdAt}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
+
+      {/* New Project Modal */}
+      {isModalOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0, left: 0, right: 0, bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}
+        >
+          <div 
+            style={{
+              backgroundColor: '#ffffff',
+              padding: '32px',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '450px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Create New Project</h2>
+              <button 
+                onClick={() => setIsModalOpen(false)} 
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#6b7280', transition: 'all 0.2s ease' }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = '#000000';
+                  e.currentTarget.style.transform = 'scale(1.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = '#6b7280';
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Project Name</label>
+                <input 
+                  type="text"
+                  required
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', outline: 'none' }}
+                  value={newProject.name}
+                  onChange={e => setNewProject({...newProject, name: e.target.value})}
+                  placeholder="e.g., Mobile App"
+                />
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', fontSize: '14px', fontWeight: '500', color: '#374151', marginBottom: '8px' }}>Description</label>
+                <textarea 
+                  rows="3"
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', outline: 'none' }}
+                  value={newProject.description}
+                  onChange={e => setNewProject({...newProject, description: e.target.value})}
+                  placeholder="What is this project about?"
+                />
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  type="button"
+                  onClick={() => setIsModalOpen(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #d1d5db', background: '#ffffff', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#ffffff';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '6px', border: 'none', background: '#000000', color: '#ffffff', fontWeight: '500', cursor: 'pointer', transition: 'all 0.2s ease' }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = '#374151';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = '#000000';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  Create Project
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
