@@ -1,7 +1,7 @@
 ﻿module.exports = (app) => {
   const users = [
-    { username: 'admin', password: 'pass' },
-    { username: 'user', password: 'password' }
+    { username: 'admin', password: 'pass', projectName: 'Admin Project' },
+    { username: 'user', password: 'password', projectName: 'User Project' }
   ];
 
   app.post('/api/login', (req, res) => {
@@ -15,6 +15,22 @@
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
 
-    return res.json({ success: true, user: { username: user.username } });
+    return res.json({ success: true, user: { username: user.username, projectName: user.projectName } });
+  });
+
+  app.post('/api/register', (req, res) => {
+    const { username, password, projectName } = req.body;
+
+    if (!username || !password || !projectName) {
+      return res.status(400).json({ success: false, message: 'Username, password, and project name are required' });
+    }
+
+    const existingUser = users.find(u => u.username === username);
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'Username already exists' });
+    }
+
+    users.push({ username, password, projectName });
+    return res.status(201).json({ success: true, user: { username, projectName } });
   });
 };

@@ -23,10 +23,10 @@ body {
 
 .login-card {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
   background: #ffffff;
-  padding: 32px;
-  border-radius: 16px;
+  padding: 28px 36px;
+  border-radius: 14px;
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.08);
   color: #111827;
 }
@@ -53,23 +53,53 @@ body {
 
 .login-label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-weight: 600;
-  color: #111827;
+  color: #374151;
+  font-size: 13px;
 }
 
 .login-input {
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 18px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #ffffff;
-  color: #111827;
+  width: 90%;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .06s ease;
+  font-size: 14px;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.08), 0 0 0 4px rgba(99, 102, 241, 0.06);
+  transform: translateY(-1px);
 }
 
 .login-input:last-of-type {
   margin-bottom: 24px;
+}
+
+.auth-toggle {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: #3f0227;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.link-button:hover {
+  color: #5b0d46;
 }
 
 .btn-login {
@@ -330,4 +360,11 @@ body {
   color: #666;
   font-weight: 500;
   padding-left: 15px;
+}
+
+/* Improved login inputs */
+.login-card {
+  max-width: 480px;
+  padding: 28px 36px;
+  border-radius: 14px;
 }

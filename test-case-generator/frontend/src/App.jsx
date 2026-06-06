@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { Trash2, Upload, FileText } from 'lucide-react';
 import './App.css';
+import Register from './Register.jsx';
 
 // AI-USAGE SUMMARY (Function: handleLoginSubmit)
 // Tools: GitHub Copilot
@@ -21,6 +22,7 @@ import './App.css';
 
 function App() {
   const [user, setUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
   const [loginUsername, setLoginUsername] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -83,6 +85,13 @@ function App() {
     } finally {
       setLoginLoading(false);
     }
+  };
+
+  const handleRegisterSuccess = (username) => {
+    setAuthMode('login');
+    setLoginUsername(username);
+    setLoginPassword('');
+    setLoginError('Registration successful. Please sign in.');
   };
 
   const handleLogout = () => {
@@ -208,7 +217,12 @@ function App() {
   };
 
   if (!user) {
-    return (
+    return authMode === 'register' ? (
+      <Register
+        onRegisterSuccess={handleRegisterSuccess}
+        onSwitchToLogin={() => setAuthMode('login')}
+      />
+    ) : (
       <div className="login-page">
         <div className="login-card">
           <h1 className="login-title">SpecCheck Login</h1>
@@ -249,6 +263,10 @@ function App() {
               {loginLoading ? 'Signing in...' : 'Sign In'}
             </button>
           </form>
+
+          <div className="auth-toggle">
+            <p>Don't have an account? <button type="button" className="link-button" onClick={() => setAuthMode('register')}>Create an account</button></p>
+          </div>
         </div>
       </div>
     );
