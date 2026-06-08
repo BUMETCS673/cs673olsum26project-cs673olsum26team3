@@ -1,0 +1,33 @@
+/* ==========================================================================
+   DocumentsView Specialized Utility Mapping Sheet
+   ========================================================================== */
+
+.w-full { width: 100%; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.inline-block { display: inline-block; }
+.hidden { display: none; }
+.overflow-hidden { overflow: hidden; }
+
+/* Border Styles mapping */
+.border-2 { border-width: 2px; border-style: solid; }
+.border-dashed { border-style: dashed; }
+.border-gray-300 { border-color: #d1d5db; }
+.divide-gray-100 > * + * { border-top: 1px solid #f3f4f6; }
+
+/* Spacing and Alignment Blocks */
+.p-12 { padding: 3rem; }
+.py-3 { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+.py-4 { padding-top: 1rem; padding-bottom: 1rem; }
+.mb-4 { margin-bottom: 1rem; }
+.tracking-wider { letter-spacing: 0.05em; }
+
+/* Text Color Accents */
+.text-green-600 { color: #16a34a; }
+.text-yellow-600 { color: #ca8a04; }
+
+/* Custom utility component rules */
+.cursor-pointer { cursor: pointer; }
+.hover\:bg-gray-50:hover { background-color: #f9fafb; }
+.hover\:text-red-600:hover { color: #dc2626; }

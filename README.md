@@ -27,7 +27,7 @@
 | Part | Tools Used |
 | :--- | :--- |
 | **Frontend** | JavaScript, HTML, CSS |
-| **Backend** | Node.js / Express *(built to connect smoothly with Django setup)* |
+| **Backend** | Node.js / Express |
 | **Database** | MongoDB & Vector Database (for document memory) |
 | **AI Tools** | OpenAI API / Claude API, `pdf-parse`, `Tesseract.js` (for reading image text) |
 | **Management** | Jira, GitHub Issues |
@@ -78,7 +78,7 @@ tests/
 ├── features/          ← Gherkin scenarios (.feature files)
 ├── pages/             ← Page Object Model classes
 ├── step_definitions/  ← @given/@when/@then step implementations
-├── fixtures/          ← Sample files used by tests (PDF, PNG, JPG, EXE, MP3)
+├── fixtures/          ← Sample files used by tests (PDF, PNG, JPG)
 ├── reports/           ← Auto-generated HTML report + failure screenshots
 ├── conftest.py        ← Shared fixtures and hooks
 ├── requirements.txt   ← Python dependencies

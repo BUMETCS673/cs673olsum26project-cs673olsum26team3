@@ -3,22 +3,16 @@ services:
     build: ./backend
     ports:
       - "5001:5001"
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
+    env_file:
+      - ./backend/.env
 
   frontend-service:
     build: ./frontend
     ports:
       - "5173:5173"
-    environment:
-      - VITE_PROXY_TARGET=http://backend-service:5001
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     stdin_open: true
     tty: true
-
+  
   test-runner:
     build:
       context: ../tests
