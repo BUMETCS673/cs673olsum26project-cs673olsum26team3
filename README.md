@@ -69,6 +69,69 @@ Every code save (commit) must start with one of these words so the team knows ho
 
 ---
 
+## 🧪 Test Automation
+
+End-to-end UI tests are written with **Playwright + pytest-bdd** (Gherkin BDD) and live in the `tests/` folder.
+
+```
+tests/
+├── features/          ← Gherkin scenarios (.feature files)
+├── pages/             ← Page Object Model classes
+├── step_definitions/  ← @given/@when/@then step implementations
+├── fixtures/          ← Sample files used by tests (PDF, PNG, JPG, EXE, MP3)
+├── reports/           ← Auto-generated HTML report + failure screenshots
+├── conftest.py        ← Shared fixtures and hooks
+├── requirements.txt   ← Python dependencies
+└── wait_and_run.sh    ← Docker readiness probe + pytest launcher
+```
+
+### Running Tests with Docker (Recommended)
+
+Docker spins up the full stack automatically — no local Python or Node install needed.
+
+**Step 1 — Navigate to the app directory:**
+```powershell
+cd test-case-generator
+```
+
+**Step 2 — Build and run everything:**
+```powershell
+docker compose --profile test up --build
+```
+
+This starts the backend (`localhost:5001`), frontend (`localhost:5173`), and the test runner. Tests execute automatically once services are ready.
+
+**Step 3 — View the report:**
+```powershell
+# From the repo root
+Start-Process "tests\reports\report.html"
+```
+
+### Running Tests Locally (without Docker)
+
+Start backend and frontend first, then from the `tests/` directory:
+
+```powershell
+# Install dependencies (one time)
+py -3.12 -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+playwright install chromium
+
+# Run the full suite
+pytest
+
+# Run only smoke tests
+pytest -m smoke
+
+# Run with a visible browser (for debugging)
+pytest --headed
+```
+
+> Full setup instructions and troubleshooting are in [`tests/README.md`](tests/README.md).
+
+---
+
 ## 🔗 Project Links
 
 *   **GitHub Repository:** [Team 3 Code](https://github.com/BUMETCS673/cs673olsum26project-cs673olsum26team3)
