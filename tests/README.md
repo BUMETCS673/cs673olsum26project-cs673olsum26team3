@@ -41,7 +41,7 @@ All commands are run from this `tests/` directory.
 ### 1. Prerequisites
 
 - **Python 3.9–3.12** (Python 3.13+ is not supported yet by `playwright==1.44.0`)
-- The app must be running (see **Start the application** below)
+- The app does **not** need to be running — the suite always uses a JS fetch mock for all API calls
 
 ### 2. Create a virtual environment
 
@@ -86,7 +86,7 @@ Copy-Item .env.example .env
 notepad .env
 ```
 
-`.env` is git-ignored. If you skip this step, the tests fall back to the defaults (`admin` / `pass`) that match the project's dev backend.
+`.env` is git-ignored. If you skip this step, the tests fall back to the defaults (`admin` / `pass`).
 
 You can also pass the variables inline without a file:
 
@@ -94,23 +94,7 @@ You can also pass the variables inline without a file:
 $env:TEST_USERNAME="admin"; $env:TEST_PASSWORD="pass"; pytest
 ```
 
-### 6. Start the application
-
-Open **two** terminals and keep them running:
-
-```powershell
-# Terminal 1 — backend (http://localhost:5001)
-cd ..\test-case-generator\backend
-npm install
-node server.js
-
-# Terminal 2 — frontend (http://localhost:5173)
-cd ..\test-case-generator\frontend
-npm install
-npm run dev
-```
-
-> **Note:** When the backend is not running, the test suite activates a fetch mock that intercepts `/api/login` and `/api/upload` so upload and login scenarios still pass without a live server.
+> **Note:** No backend or frontend needs to be running. The test suite always injects a JS fetch mock that intercepts all API calls (`/api/login`, `/api/projects`, `/api/upload`). This keeps the suite independent of MongoDB, OpenAI, and network conditions — tests are reliable locally and in CI without any extra setup.
 
 ---
 
@@ -310,9 +294,8 @@ Raw PNG files are saved to `reports/screenshots/`.
 
 | Problem | Fix |
 |---------|-----|
-| `ConnectionError` / page blank | Ensure backend (`node server.js`) and frontend (`npm run dev`) are running |
-| Login step fails / "Cannot connect to auth server" | Check `.env` credentials or set `TEST_USERNAME`/`TEST_PASSWORD` env vars (see Setup step 5) |
+| Login step fails / "Incorrect username or password" | Check `tests/.env` — `TEST_USERNAME` / `TEST_PASSWORD` must match the values in `.env` exactly |
 | `FileNotFoundError: fixture` | Add the required files to `fixtures/` (see Setup step 4) |
 | `ModuleNotFoundError: pages` | Run `pytest` from the `tests/` directory, not from the repo root |
-| OCR upload test fails | Ensure `sample_valid.jpg` and `sample_valid.png` contain readable text that Tesseract can process |
-| PDF upload test fails | Ensure `sample_valid.pdf` contains readable text |
+| Upload alert not captured | Playwright deadlocks if `expect_event("dialog")` is used — the suite uses `page.once("dialog", ...)` instead; do not change this |
+| Tests time out waiting for Projects view | The mock always returns one project; if you see this, the `add_init_script` did not fire — ensure `mock_upload_api` fixture is active |

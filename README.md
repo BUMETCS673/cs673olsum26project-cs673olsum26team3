@@ -61,6 +61,8 @@ TEST_PASSWORD=<password_of_your_test_account>
 
 This file is loaded automatically by `python-dotenv` when running tests locally. For CI, set these as GitHub Actions secrets (see [CI/CD](#cicd) below).
 
+> The test suite does **not** require the backend or OpenAI to be running. All API calls are intercepted by an in-browser JS fetch mock, so tests pass without MongoDB, OpenAI, or any live server.
+
 ---
 
 ## Running the App
@@ -148,7 +150,7 @@ pytest -m drag_drop    # drag-and-drop
 pytest --headed --slowmo=500   # visible browser, slow motion
 ```
 
-> **Note:** If the backend is not running, the test suite activates a fetch mock that intercepts all API calls (`/api/login`, `/api/projects`, `/api/upload`) so tests can run fully without a live backend.
+> **Note:** The test suite always uses a JS fetch mock for all API calls (`/api/login`, `/api/projects`, `/api/upload`). No running backend, MongoDB connection, or OpenAI key is needed to run tests.
 
 ### Test markers
 
