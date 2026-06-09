@@ -93,11 +93,14 @@ def dashboard_page(page, base_url, mock_upload_api):
 
 def _backend_running() -> bool:
     """Return True only when server.js is healthy AND MongoDB is accessible.
+    Returns False immediately when FORCE_MOCK=true is set (local Docker override).
     Probes POST /api/login with dummy credentials.  A 401 response means the
     server reached MongoDB (wrong creds → expected); a 5xx means MongoDB is
     unreachable (use mock instead).  OPTIONS on /api/upload is intentionally
     NOT used — Express answers it even when MongoDB is down.
     """
+    if os.environ.get("FORCE_MOCK", "").lower() in ("1", "true", "yes"):
+        return False
     try:
         data = json.dumps({"username": "_healthcheck_", "password": "_healthcheck_"}).encode()
         req = urllib.request.Request(
@@ -177,8 +180,13 @@ def mock_upload_api(page, _use_real_backend, test_credentials):
                 createdAt: new Date().toISOString()
             }};
 
-            // In-memory document store for the mock session
-            let mockDocuments = [];
+            // In-memory document store — seeded with one doc so delete tests always have a row
+            let mockDocuments = [{{
+                id: 'mock-seed-doc-001',
+                name: 'seed_document.pdf',
+                uploadedAt: new Date().toISOString(),
+                status: 'Ready'
+            }}];
 
             const _origFetch = window.fetch;
             window.fetch = async function(url, options) {{

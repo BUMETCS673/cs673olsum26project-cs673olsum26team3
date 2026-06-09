@@ -69,17 +69,31 @@ class DashboardPage:
         self._open_first_project_documents()
 
     def _open_first_project_documents(self) -> None:
-        """Click 'Documents' on the first project card, wait for Documents view."""
-        # Wait for project cards to load (Projects view renders after API call)
-        self.page.wait_for_timeout(1_000)
+        """Click 'Documents' on the first project card. Creates a project first if none exist."""
+        # Wait until the Projects view has fully loaded: either project cards (Documents button)
+        # or the empty state ("Welcome to SpecCheck") must be present before we decide.
+        docs_locator = self.page.get_by_role("button", name="Documents")
+        empty_locator = self.page.get_by_text("Welcome to SpecCheck")
+        docs_locator.or_(empty_locator).first.wait_for(state="visible", timeout=15_000)
 
-        # Click the first "Documents" button in any project card
         docs_btn = self.page.get_by_role("button", name="Documents").first
+        if not docs_btn.is_visible():
+            # Empty state — no projects yet; create one via the UI first
+            self._create_test_project()
+
         docs_btn.wait_for(state="visible", timeout=10_000)
         docs_btn.click()
-
-        # Documents view renders h1 that starts with "Documents /"
         self.page.locator("main h1").wait_for(state="visible", timeout=10_000)
+
+    def _create_test_project(self) -> None:
+        """Create a test project via the UI (used when the account has no projects yet)."""
+        # Use filter(has_text=) to match by visible text, not ARIA name, so the
+        # Plus icon inside the button doesn't affect the match.
+        self.page.locator("button").filter(has_text="New Project").first.click()
+        self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
+        self.page.locator("button").filter(has_text="Create Project").click()
+        # Wait for modal to close and project list to re-render
+        self.page.wait_for_timeout(2_000)
 
     # ── Header ───────────────────────────────────────────────────────────────
 
