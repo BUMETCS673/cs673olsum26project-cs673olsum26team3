@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import re
 
-import pytest
 from pytest_bdd import given, parsers, then, when
 
 from pages.dashboard_page import DashboardPage
@@ -47,6 +46,26 @@ def all_docs_deleted(dashboard_page: DashboardPage, page) -> None:
 # ─────────────────────────────── When ───────────────────────────────────────
 
 
+def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
+    """Register a one-shot dialog handler, run action_fn, then poll until the
+    dialog fires (up to 30 s).  Using page.once() instead of expect_event()
+    avoids a deadlock where Python blocks inside set_input_files() / evaluate()
+    while a synchronous alert() is waiting for a handler.
+    """
+    def _handle(dialog):
+        dialog_messages.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", _handle)
+    action_fn()
+
+    # Sync alerts are already captured; for async uploads poll until dialog fires.
+    for _ in range(150):  # up to 30 s
+        if dialog_messages:
+            break
+        page.wait_for_timeout(200)
+
+
 @when(parsers.parse('the user selects the file "{fixture_file}"'))
 def select_single_file(
     dashboard_page: DashboardPage,
@@ -55,15 +74,10 @@ def select_single_file(
     fixture_file: str,
     dialog_messages: list,
 ) -> None:
-    """Select a file — for valid files the upload fires immediately and an alert follows.
-    For invalid files the validation alert fires synchronously within ~200 ms.
-    We use expect_event so both cases are captured without a fixed long sleep.
-    """
-    with page.expect_event("dialog", timeout=30_000) as dialog_info:
-        dashboard_page.select_files([fixture_path(fixture_file)])
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    _wait_for_dialog(
+        page, dialog_messages,
+        lambda: dashboard_page.select_files([fixture_path(fixture_file)]),
+    )
 
 
 @when(parsers.parse('the user selects files "{f1}", "{f2}", "{f3}"'))
@@ -76,12 +90,10 @@ def select_three_files(
     f3: str,
     dialog_messages: list,
 ) -> None:
-    """Select three files; upload fires immediately for valid batch."""
-    with page.expect_event("dialog", timeout=30_000) as dialog_info:
-        dashboard_page.select_files([fixture_path(f1), fixture_path(f2), fixture_path(f3)])
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    _wait_for_dialog(
+        page, dialog_messages,
+        lambda: dashboard_page.select_files([fixture_path(f1), fixture_path(f2), fixture_path(f3)]),
+    )
 
 
 @when(parsers.parse('the user selects files "{f1}" and "{f2}"'))
@@ -93,12 +105,10 @@ def select_two_files(
     f2: str,
     dialog_messages: list,
 ) -> None:
-    """Select two files; any validation or upload dialog is captured."""
-    with page.expect_event("dialog", timeout=30_000) as dialog_info:
-        dashboard_page.select_files([fixture_path(f1), fixture_path(f2)])
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    _wait_for_dialog(
+        page, dialog_messages,
+        lambda: dashboard_page.select_files([fixture_path(f1), fixture_path(f2)]),
+    )
 
 
 @when("the user records the initial row count")
@@ -158,11 +168,10 @@ def drop_file(
     dialog_messages: list,
 ) -> None:
     """Drop a file; capture any validation or upload-success dialog."""
-    with page.expect_event("dialog", timeout=30_000) as dialog_info:
-        dashboard_page.drop_file_onto_upload_zone(fixture_path(fixture_file))
-    dialog = dialog_info.value
-    dialog_messages.append(dialog.message)
-    dialog.accept()
+    _wait_for_dialog(
+        page, dialog_messages,
+        lambda: dashboard_page.drop_file_onto_upload_zone(fixture_path(fixture_file)),
+    )
 
 
 # ─────────────────────────────── Then ───────────────────────────────────────

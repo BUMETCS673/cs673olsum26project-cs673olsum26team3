@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.error
 import urllib.request
 from datetime import datetime
 from pathlib import Path
@@ -91,11 +92,24 @@ def dashboard_page(page, base_url, mock_upload_api):
 
 
 def _backend_running() -> bool:
-    """Return True only if server.js is healthy (HTTP 2xx/3xx on OPTIONS /api/upload)."""
+    """Return True only when server.js is healthy AND MongoDB is accessible.
+    Probes POST /api/login with dummy credentials.  A 401 response means the
+    server reached MongoDB (wrong creds → expected); a 5xx means MongoDB is
+    unreachable (use mock instead).  OPTIONS on /api/upload is intentionally
+    NOT used — Express answers it even when MongoDB is down.
+    """
     try:
-        req = urllib.request.Request(f"{BACKEND_URL}/api/upload", method="OPTIONS")
+        data = json.dumps({"username": "_healthcheck_", "password": "_healthcheck_"}).encode()
+        req = urllib.request.Request(
+            f"{BACKEND_URL}/api/login",
+            data=data,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status < 500
+    except urllib.error.HTTPError as e:
+        return e.code < 500  # 401 = "incorrect creds" = DB is working
     except Exception:
         return False
 
