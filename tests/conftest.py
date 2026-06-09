@@ -26,6 +26,9 @@ TESTS_DIR = Path(__file__).parent
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 
+# The backend URL as seen by the Python process (used for health check and Docker proxy)
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5001")
+
 
 # ─────────────────────────────────── Fixtures ──────────────────────────────────
 
@@ -89,12 +92,8 @@ def dashboard_page(page, base_url, mock_upload_api):
 
 def _backend_running() -> bool:
     """Return True only if server.js is healthy (HTTP 2xx/3xx on OPTIONS /api/upload)."""
-    backend_url = os.environ.get("BACKEND_URL", "http://localhost:5001")
     try:
-        req = urllib.request.Request(
-            f"{backend_url}/api/upload",
-            method="OPTIONS",
-        )
+        req = urllib.request.Request(f"{BACKEND_URL}/api/upload", method="OPTIONS")
         with urllib.request.urlopen(req, timeout=5) as resp:
             return resp.status < 500
     except Exception:
@@ -107,6 +106,28 @@ def _use_real_backend() -> bool:
     if not available:
         print("\n[conftest] Backend not running — API requests will be mocked.")
     return available
+
+
+@pytest.fixture(autouse=True)
+def proxy_backend_in_docker(page, _use_real_backend):
+    """In Docker, Login.jsx and other views hardcode http://localhost:5001 for API calls.
+    The Playwright browser runs inside the test-runner container where localhost:5001
+    is unreachable — the real backend is at backend-service:5001.
+
+    When BACKEND_URL differs from localhost, intercept all browser requests to
+    localhost:5001 and forward them to the actual backend container.
+    This is transparent to the app and requires no project code changes.
+    """
+    if not _use_real_backend or BACKEND_URL == "http://localhost:5001":
+        yield
+        return
+
+    def _handle(route):
+        new_url = route.request.url.replace("http://localhost:5001", BACKEND_URL, 1)
+        route.continue_(url=new_url)
+
+    page.route("http://localhost:5001/**", _handle)
+    yield
 
 
 @pytest.fixture(autouse=True)
