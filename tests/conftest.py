@@ -4,8 +4,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import urllib.error
-import urllib.request
 from datetime import datetime
 from pathlib import Path
 
@@ -26,9 +24,6 @@ pytest_plugins = [
 TESTS_DIR = Path(__file__).parent
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
-
-# The backend URL as seen by the Python process (used for health check and Docker proxy)
-BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5001")
 
 
 # ─────────────────────────────────── Fixtures ──────────────────────────────────
@@ -91,79 +86,22 @@ def dashboard_page(page, base_url, mock_upload_api):
 # ──────────────────────────── Upload API mock ──────────────────────────────────
 
 
-def _backend_running() -> bool:
-    """Return True only when server.js is healthy AND MongoDB is accessible.
-    Returns False immediately when FORCE_MOCK=true is set (local Docker override).
-    Probes POST /api/login with dummy credentials.  A 401 response means the
-    server reached MongoDB (wrong creds → expected); a 5xx means MongoDB is
-    unreachable (use mock instead).  OPTIONS on /api/upload is intentionally
-    NOT used — Express answers it even when MongoDB is down.
-    """
-    if os.environ.get("FORCE_MOCK", "").lower() in ("1", "true", "yes"):
-        return False
-    try:
-        data = json.dumps({"username": "_healthcheck_", "password": "_healthcheck_"}).encode()
-        req = urllib.request.Request(
-            f"{BACKEND_URL}/api/login",
-            data=data,
-            method="POST",
-            headers={"Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=5) as resp:
-            return resp.status < 500
-    except urllib.error.HTTPError as e:
-        return e.code < 500  # 401 = "incorrect creds" = DB is working
-    except Exception:
-        return False
-
-
-@pytest.fixture(scope="session")
-def _use_real_backend() -> bool:
-    available = _backend_running()
-    if not available:
-        print("\n[conftest] Backend not running — API requests will be mocked.")
-    return available
-
-
 @pytest.fixture(autouse=True)
-def proxy_backend_in_docker(page, _use_real_backend):
-    """In Docker, Login.jsx and other views hardcode http://localhost:5001 for API calls.
-    The Playwright browser runs inside the test-runner container where localhost:5001
-    is unreachable — the real backend is at backend-service:5001.
+def mock_upload_api(page, test_credentials):
+    """Intercept all backend API calls with an in-browser JS fetch mock.
 
-    When BACKEND_URL differs from localhost, intercept all browser requests to
-    localhost:5001 and forward them to the actual backend container.
-    This is transparent to the app and requires no project code changes.
-    """
-    if not _use_real_backend or BACKEND_URL == "http://localhost:5001":
-        yield
-        return
-
-    def _handle(route):
-        new_url = route.request.url.replace("http://localhost:5001", BACKEND_URL, 1)
-        route.continue_(url=new_url)
-
-    page.route("http://localhost:5001/**", _handle)
-    yield
-
-
-@pytest.fixture(autouse=True)
-def mock_upload_api(page, _use_real_backend, test_credentials):
-    """Mock all backend API calls when server.js is not running.
+    These are BDD UI tests — they verify application behaviour, not backend
+    integration. Using a mock makes the suite independent of OpenAI, MongoDB,
+    and network conditions so it runs reliably locally and in CI.
 
     Handles:
-      POST /api/login       — credential-aware (correct creds → success, wrong → 401)
-      GET  /api/projects    — returns one test project so the Documents view is reachable
+      POST /api/login       — credential-aware (correct creds → 200, wrong → 401)
+      GET  /api/projects    — returns one test project so Documents view is reachable
       POST /api/projects    — creates a project (used by dashboard tests)
-      GET  /api/upload/:id  — returns an empty document list (populated after upload)
-      POST /api/upload      — returns upload success with file metadata
-      DELETE /api/upload/:id — returns deletion success
+      GET  /api/upload/:id  — returns the current in-memory document list
+      POST /api/upload      — adds uploaded files to the in-memory store
+      DELETE /api/upload/:id — removes document from the in-memory store
     """
-    if _use_real_backend:
-        yield
-        return
-
-    # Embed credentials as JSON-safe strings so the JS snippet can compare them
     test_user = json.dumps(test_credentials["username"])
     test_pass = json.dumps(test_credentials["password"])
 
