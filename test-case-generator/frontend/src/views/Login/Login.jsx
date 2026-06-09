@@ -8,7 +8,7 @@ import './Login.css';
 export default function Login({ onLogin }) {
   // Mode toggle states: 'login', 'register', 'forgot'
   const [mode, setMode] = useState('login');
-  
+
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -49,7 +49,7 @@ export default function Login({ onLogin }) {
       endpoint = '/api/change-password';
       bodyPayload = { username, newPassword: password };
     }
-    
+
     try {
       const res = await fetch(`http://localhost:5001${endpoint}`, {
         method: 'POST',
@@ -58,7 +58,7 @@ export default function Login({ onLogin }) {
       });
 
       const data = await res.json();
-      
+
       if (!res.ok || !data.success) {
         setError(data.message || 'Something went wrong. Please try again.');
         return;
@@ -92,30 +92,30 @@ export default function Login({ onLogin }) {
     <div className="login-view-container">
       <div className="login-card">
         <h1>{getHeader()}</h1>
-        
+
         {error && <div className="error">{error}</div>}
         {successMsg && <div className="success" style={{ color: '#10b981', marginBottom: '1rem', fontSize: '14px', textAlign: 'center', fontWeight: '500' }}>{successMsg}</div>}
-        
+
         <form onSubmit={handleSubmit}>
           <div className="form-control-group">
             <label>Username</label>
-            <input 
+            <input
               type="text"
-              value={username} 
-              onChange={e => setUsername(e.target.value)} 
-              required 
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              required
               autoComplete="username"
               placeholder="Enter your username"
             />
           </div>
-          
+
           <div className="form-control-group">
             <label>{mode === 'forgot' ? 'New Password' : 'Password'}</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={e => setPassword(e.target.value)} 
-              required 
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              required
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               placeholder="Enter password"
             />
@@ -124,18 +124,18 @@ export default function Login({ onLogin }) {
           {(mode === 'register' || mode === 'forgot') && (
             <div className="form-control-group">
               <label>Confirm {mode === 'forgot' ? 'New ' : ''}Password</label>
-              <input 
-                type="password" 
-                value={confirmPassword} 
-                onChange={e => setConfirmPassword(e.target.value)} 
-                required 
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => setConfirmPassword(e.target.value)}
+                required
                 autoComplete="new-password"
                 placeholder="Re-type password"
               />
             </div>
           )}
-          
-          <button 
+
+          <button
             type="submit"
             style={{ transition: 'all 0.2s ease' }}
             onMouseOver={(e) => {
