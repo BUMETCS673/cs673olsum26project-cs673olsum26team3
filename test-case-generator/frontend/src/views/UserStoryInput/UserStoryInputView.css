@@ -1,0 +1,147 @@
+/* Container framework layout styling matching dark system aesthetics */
+.user-story-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+  background: var(--bg, #16171d);
+  min-height: calc(100vh - 80px);
+}
+
+.form-card {
+  width: 100%;
+  max-width: 680px;
+  background: var(--bg, #16171d);
+  border: 1px solid var(--border, #2e303a);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.form-card h2 {
+  color: var(--text-h, #f3f4f6);
+  margin: 0 0 8px 0;
+  font-size: 24px;
+}
+
+.subtitle {
+  color: var(--text, #9ca3af);
+  margin-0 0 24px 0;
+  font-size: 14px;
+}
+
+/* Input group layouts */
+.input-group {
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  color: var(--text-h, #f3f4f6);
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.input-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  background: var(--code-bg, #1f2028);
+  border: 1px solid var(--border, #2e303a);
+  color: var(--text-h, #f3f4f6);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.input-group textarea:focus {
+  border-color: var(--accent, #c084fc);
+}
+
+.live-preview {
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--text, #9ca3af);
+}
+
+.live-preview .placeholder {
+  color: #555;
+  font-style: italic;
+}
+
+/* Checkbox alignment cluster */
+.checkbox-cluster {
+  display: flex;
+  gap: 24px;
+  margin-top: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: var(--text, #9ca3af) !important;
+  font-weight: 400 !important;
+}
+
+/* Error warning container */
+.error-banner {
+  background: #ef4444;
+  color: #ffffff;
+  padding: 12px 16px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Action submission element */
+.submit-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--accent, #c084fc);
+  color: #16171d;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 150ms ease;
+}
+
+.submit-btn:hover {
+  opacity: 0.9;
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Scenario 4: Circular animated loading spinner design */
+.spinner-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(22, 23, 29, 0.2);
+  border-top-color: #16171d;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
