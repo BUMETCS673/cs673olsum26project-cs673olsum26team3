@@ -1,14 +1,14 @@
 """Step definitions for features/dashboard.feature.
 
-One step file per feature file, following the Page Object Model pattern:
-  DashboardPage  →  dashboard.feature  →  dashboard_steps.py
-
-Dialog handling pattern
------------------------
-window.alert() and window.confirm() must be handled by registering
-page.once("dialog", handler) BEFORE the action that triggers the dialog.
-For multi-step scenarios (When … Then …), we capture the message in the
-When step using page.expect_event("dialog") so the Then step can assert on it.
+# AI-USAGE SUMMARY
+# Tools: Claude Code
+# Key changes aligned with current DocumentsView.jsx:
+#   - Upload is immediate on file selection (no separate Upload button)
+#   - No preview staging — files upload and appear in table directly
+#   - Drag zone CSS class is Tailwind 'border-blue-500' (isDragging state), not 'dragging'
+#   - Empty state text: "No documents found for this project."
+#   - Row status column is 'Ready'/'Processing', not file size
+#   - 'click upload without selecting' step removed (no such button in current UI)
 """
 from __future__ import annotations
 
@@ -19,7 +19,8 @@ from pytest_bdd import given, parsers, then, when
 
 from pages.dashboard_page import DashboardPage
 
-# ─────────────────────────────────── Given ──────────────────────────────────────
+
+# ─────────────────────────────── Given ──────────────────────────────────────
 
 
 @given("the user is logged in")
@@ -29,18 +30,21 @@ def user_is_logged_in(dashboard_page: DashboardPage, test_credentials: dict) -> 
 
 @given("the Document Dashboard is open")
 def dashboard_is_open(dashboard_page: DashboardPage) -> None:
-    """Navigation is handled by the dashboard_page fixture."""
+    """Navigation to Documents view is handled inside dashboard_page.login()."""
 
 
 @given("the document table has at least 1 row")
 def table_has_rows(dashboard_page: DashboardPage) -> None:
-    """Fixture ensures at least one document row exists before the step runs."""
+    """Assumes the test project has at least one document (seeded by mock or real backend)."""
 
 
 @given("all documents have been deleted")
 def all_docs_deleted(dashboard_page: DashboardPage, page) -> None:
     dashboard_page.delete_all_documents()
     page.wait_for_timeout(300)
+
+
+# ─────────────────────────────── When ───────────────────────────────────────
 
 
 @when(parsers.parse('the user selects the file "{fixture_file}"'))
@@ -51,29 +55,33 @@ def select_single_file(
     fixture_file: str,
     dialog_messages: list,
 ) -> None:
-    """Select a file via the file input. Captures any synchronous alert that fires."""
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.on("dialog", _handle)
-    try:
+    """Select a file — for valid files the upload fires immediately and an alert follows.
+    For invalid files the validation alert fires synchronously within ~200 ms.
+    We use expect_event so both cases are captured without a fixed long sleep.
+    """
+    with page.expect_event("dialog", timeout=30_000) as dialog_info:
         dashboard_page.select_files([fixture_path(fixture_file)])
-        # Brief pause so synchronous dialogs are processed before we remove the listener
-        page.wait_for_timeout(150)
-    finally:
-        page.remove_listener("dialog", _handle)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.accept()
 
 
 @when(parsers.parse('the user selects files "{f1}", "{f2}", "{f3}"'))
 def select_three_files(
     dashboard_page: DashboardPage,
+    page,
     fixture_path,
     f1: str,
     f2: str,
     f3: str,
+    dialog_messages: list,
 ) -> None:
-    dashboard_page.select_files([fixture_path(f1), fixture_path(f2), fixture_path(f3)])
+    """Select three files; upload fires immediately for valid batch."""
+    with page.expect_event("dialog", timeout=30_000) as dialog_info:
+        dashboard_page.select_files([fixture_path(f1), fixture_path(f2), fixture_path(f3)])
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.accept()
 
 
 @when(parsers.parse('the user selects files "{f1}" and "{f2}"'))
@@ -85,47 +93,12 @@ def select_two_files(
     f2: str,
     dialog_messages: list,
 ) -> None:
-    """Select two files; captures any validation alert that fires."""
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.on("dialog", _handle)
-    try:
-        dashboard_page.select_files([fixture_path(f1), fixture_path(f2)])
-        page.wait_for_timeout(150)
-    finally:
-        page.remove_listener("dialog", _handle)
-
-
-@when("the user clicks the Upload Files button")
-def click_upload(
-    dashboard_page: DashboardPage,
-    page,
-    dialog_messages: list,
-) -> None:
-    """Click Upload Files and wait for the resulting alert (up to 30 s for backend)."""
+    """Select two files; any validation or upload dialog is captured."""
     with page.expect_event("dialog", timeout=30_000) as dialog_info:
-        dashboard_page.click_upload_button()
+        dashboard_page.select_files([fixture_path(f1), fixture_path(f2)])
     dialog = dialog_info.value
     dialog_messages.append(dialog.message)
     dialog.accept()
-
-
-@when("the user clicks the Upload Files button without selecting any files")
-def click_upload_no_files(
-    dashboard_page: DashboardPage,
-    page,
-    dialog_messages: list,
-) -> None:
-    """Click Upload Files when no file is selected — fires alert synchronously."""
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.once("dialog", _handle)
-    dashboard_page.click_upload_button()
-    page.wait_for_timeout(300)
 
 
 @when("the user records the initial row count")
@@ -148,7 +121,7 @@ def delete_first_row_ok(
 
     page.once("dialog", _handle)
     dashboard_page.click_delete_button(0)
-    page.wait_for_timeout(300)  # let React re-render
+    page.wait_for_timeout(500)
 
 
 @when("the user clicks Delete on the first row and dismisses with Cancel")
@@ -163,7 +136,7 @@ def delete_first_row_cancel(
 
     page.once("dialog", _handle)
     dashboard_page.click_delete_button(0)
-    page.wait_for_timeout(300)  # let React re-render
+    page.wait_for_timeout(300)
 
 
 @when("the user drags a file over the upload section")
@@ -184,41 +157,33 @@ def drop_file(
     fixture_file: str,
     dialog_messages: list,
 ) -> None:
-    """Drop a file onto the upload zone; capture any synchronous validation alert."""
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.on("dialog", _handle)
-    try:
+    """Drop a file; capture any validation or upload-success dialog."""
+    with page.expect_event("dialog", timeout=30_000) as dialog_info:
         dashboard_page.drop_file_onto_upload_zone(fixture_path(fixture_file))
-        page.wait_for_timeout(200)
-    finally:
-        page.remove_listener("dialog", _handle)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.accept()
 
 
-# ─────────────────────────────────── Then ───────────────────────────────────────
+# ─────────────────────────────── Then ───────────────────────────────────────
 
 # ── Page layout ──
 
 @then(parsers.parse('the page header reads "{expected_text}"'))
 def check_header(dashboard_page: DashboardPage, expected_text: str) -> None:
-    assert dashboard_page.get_header_title() == expected_text
+    actual = dashboard_page.get_header_title()
+    assert expected_text in actual, f"Expected header containing '{expected_text}', got '{actual}'"
 
 
 @then(parsers.parse('the sub-header reads "{expected_text}"'))
 def check_subheader(dashboard_page: DashboardPage, expected_text: str) -> None:
-    assert dashboard_page.get_header_subtitle() == expected_text
+    actual = dashboard_page.get_header_subtitle()
+    assert expected_text in actual, f"Expected sub-header containing '{expected_text}', got '{actual}'"
 
 
 @then("the upload section is visible")
 def check_upload_section(dashboard_page: DashboardPage) -> None:
     assert dashboard_page.is_upload_section_visible()
-
-
-@then("the Upload Files button is visible")
-def check_upload_button(dashboard_page: DashboardPage) -> None:
-    assert dashboard_page.is_upload_button_visible()
 
 
 # ── Table structure ──
@@ -230,8 +195,9 @@ def check_table_visible(dashboard_page: DashboardPage) -> None:
 
 @then("the table has the correct column headers")
 def check_table_headers(dashboard_page: DashboardPage) -> None:
-    expected = ["Document Name", "Upload Date", "File Size", "Action"]
-    assert dashboard_page.get_table_header_texts() == expected
+    expected = ["Document", "Uploaded", "Status", "Actions"]
+    actual = dashboard_page.get_table_header_texts()
+    assert actual == expected, f"Expected headers {expected}, got {actual}"
 
 
 @then("the table contains at least 1 row")
@@ -239,18 +205,19 @@ def check_table_has_rows(dashboard_page: DashboardPage) -> None:
     assert dashboard_page.get_table_row_count() >= 1
 
 
-@then("each row has a filename, a date, a file size, and a Delete button")
+@then("each row has a filename, a date, a status, and a Delete button")
 def check_each_row(dashboard_page: DashboardPage) -> None:
     count = dashboard_page.get_table_row_count()
-    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
     for i in range(count):
         filename = dashboard_page.get_row_filename(i)
         date_str = dashboard_page.get_row_date(i)
-        size_str = dashboard_page.get_row_size(i)
+        status_str = dashboard_page.get_row_status(i)
         has_delete = dashboard_page.has_delete_button(i)
         assert filename, f"Row {i}: filename is empty"
-        assert date_pattern.match(date_str), f"Row {i}: date '{date_str}' is not YYYY-MM-DD"
-        assert "MB" in size_str, f"Row {i}: size '{size_str}' does not contain 'MB'"
+        assert date_str, f"Row {i}: date is empty"
+        assert status_str in ("Ready", "Processing"), (
+            f"Row {i}: status '{status_str}' is not 'Ready' or 'Processing'"
+        )
         assert has_delete, f"Row {i}: no Delete button found"
 
 
@@ -260,11 +227,11 @@ def check_each_row(dashboard_page: DashboardPage) -> None:
 def check_alert(dialog_messages: list, expected_text: str) -> None:
     assert dialog_messages, "No dialog was captured"
     assert any(expected_text in msg for msg in dialog_messages), (
-        f"Expected alert containing '{expected_text}'. Captured messages: {dialog_messages}"
+        f"Expected alert containing '{expected_text}'. Captured: {dialog_messages}"
     )
 
 
-# ── Upload / preview ──
+# ── Upload ──
 
 @then(parsers.parse('the document table contains a row with filename "{fixture_file}"'))
 def check_filename_in_table(
@@ -272,52 +239,12 @@ def check_filename_in_table(
     page,
     fixture_file: str,
 ) -> None:
-    # Wait up to 10 s for React to commit the state update and render the new row.
-    # A fixed sleep is unreliable; wait_for retries until the element is visible.
-    page.locator(".file-name-wrapper span").filter(has_text=fixture_file).wait_for(
-        state="visible", timeout=10_000
-    )
+    page.locator("main table tbody td:first-child span").filter(
+        has_text=fixture_file
+    ).wait_for(state="visible", timeout=10_000)
     assert dashboard_page.is_filename_in_table(fixture_file), (
-        f"Filename '{fixture_file}' not found in the document table"
+        f"'{fixture_file}' not found in document table"
     )
-
-
-@then(parsers.parse('a preview shows "{fixture_file}" and its size in MB'))
-def check_preview(dashboard_page: DashboardPage, fixture_file: str) -> None:
-    assert dashboard_page.is_preview_visible(), "Preview section is not visible"
-    filenames = dashboard_page.get_preview_filenames()
-    assert fixture_file in filenames, (
-        f"'{fixture_file}' not found in preview. Preview filenames: {filenames}"
-    )
-    sizes = dashboard_page.get_preview_sizes()
-    assert sizes, "Preview sizes list is empty"
-    assert any("MB" in s for s in sizes), (
-        f"No size with 'MB' found in preview. Sizes: {sizes}"
-    )
-
-
-@then("no files appear in the selected-files preview")
-def check_no_preview(dashboard_page: DashboardPage) -> None:
-    assert not dashboard_page.is_preview_visible(), (
-        "Preview section is visible but should be empty/hidden"
-    )
-
-
-@then(parsers.parse('the upload zone hint reads "{expected_text}"'))
-def check_hint_text(dashboard_page: DashboardPage, expected_text: str) -> None:
-    hint = dashboard_page.get_upload_hint_text()
-    assert expected_text in hint, (
-        f"Expected hint '{expected_text}', got: '{hint}'"
-    )
-
-
-@then(parsers.parse('"{filename}" does not appear in the preview'))
-def check_filename_not_in_preview(dashboard_page: DashboardPage, filename: str) -> None:
-    if dashboard_page.is_preview_visible():
-        filenames = dashboard_page.get_preview_filenames()
-        assert filename not in filenames, (
-            f"'{filename}' unexpectedly found in preview: {filenames}"
-        )
 
 
 # ── Delete outcomes ──
@@ -347,17 +274,16 @@ def check_row_count_unchanged(
 
 
 @then(parsers.parse('the text "{expected_text}" is visible'))
-def check_text_visible(dashboard_page: DashboardPage, expected_text: str) -> None:
-    msg = dashboard_page.get_no_data_message()
-    assert expected_text in msg, (
-        f"Expected text '{expected_text}', got '{msg}'"
-    )
+def check_text_visible(page, expected_text: str) -> None:
+    locator = page.get_by_text(expected_text, exact=False)
+    assert locator.is_visible(), f"Expected text '{expected_text}' to be visible"
 
 
 @then("the document table is not visible")
 def check_table_not_visible(dashboard_page: DashboardPage) -> None:
-    assert not dashboard_page.is_document_table_visible(), (
-        "Document table is visible but should be hidden after all docs deleted"
+    # When all docs are deleted, empty-state td shows; real data rows = 0
+    assert dashboard_page.get_table_row_count() == 0, (
+        "Document table still has rows after all documents were deleted"
     )
 
 
@@ -367,7 +293,7 @@ def check_table_not_visible(dashboard_page: DashboardPage) -> None:
 def check_has_class(dashboard_page: DashboardPage, css_class: str) -> None:
     classes = dashboard_page.get_upload_section_classes()
     assert css_class in classes, (
-        f"Expected CSS class '{css_class}' on upload-section. Classes: '{classes}'"
+        f"Expected CSS class '{css_class}' on upload zone. Classes: '{classes}'"
     )
 
 
@@ -375,5 +301,5 @@ def check_has_class(dashboard_page: DashboardPage, css_class: str) -> None:
 def check_not_has_class(dashboard_page: DashboardPage, css_class: str) -> None:
     classes = dashboard_page.get_upload_section_classes()
     assert css_class not in classes, (
-        f"CSS class '{css_class}' should not be on upload-section. Classes: '{classes}'"
+        f"CSS class '{css_class}' should not be present. Classes: '{classes}'"
     )

@@ -1,22 +1,15 @@
 """Page Object for the SpecCheck Login page.
 
 # AI-USAGE SUMMARY
-# Tools: GitHub Copilot
+# Tools: GitHub Copilot + Claude Code
 # Overall AI Contribution: ~80%
-# AI-Assisted Areas: Page object structure, locator strategy, method design
-# Human Contributions: CSS selector refinement (e.g., using get_by_role for accessibility)
-# Areas of AI Influence:
-#   - Locator initialization in __init__
-#   - Navigation and form interaction methods
-#   - Wait-for-element helpers (wait_for_dashboard, wait_for_login_page)
-#   - Error message extraction (get_login_error_text)
+# Human Contributions: Selector alignment with actual Login.jsx DOM
 # Modifications:
-#   - Updated login_title locator from 'h1.login-title' to get_by_role('heading', name='Login')
-#     for better accessibility and robustness
-#   - Refined navigate() to use get_by_role instead of class selectors
-#   - Removed validation message getters (no longer needed with manual validation)
-# Verification: Playwright test execution confirms all locators resolve correctly
-#              Manual browser inspection validated CSS selectors
+#   - Updated all selectors to match Login.jsx (no id attrs, no btn-login/btn-logout classes)
+#   - login_error uses .error (not .login-error)
+#   - logout_button targets button[title="Logout"] in Navbar
+#   - wait_for_dashboard waits for Logout button (Navbar visible after login)
+# Verification: Selectors validated against Login.jsx and Navbar.jsx source
 """
 
 from __future__ import annotations
@@ -29,17 +22,18 @@ class LoginPage:
 
     def __init__(self, page: Page) -> None:
         self.page = page
-        self.login_title = page.get_by_role("heading", name="Login")
-        self.username_input = page.locator("#username")
-        self.password_input = page.locator("#password")
-        self.sign_in_button = page.locator("button.btn-login")
-        self.login_error = page.locator(".login-error")
-        self.dashboard_header = page.locator("h1").filter(has_text="Document Dashboard")
-        self.logout_button = page.locator("button.btn-logout")
+        # Login form elements — Login.jsx has no id/class attrs, use structural selectors
+        self.login_title = page.locator(".login-card h1")
+        self.username_input = page.locator(".login-card input[type='text']")
+        self.password_input = page.locator(".login-card input[type='password']")
+        self.sign_in_button = page.locator(".login-card button[type='submit']")
+        self.login_error = page.locator(".login-card .error")
+        # After login, Navbar renders with a Logout button (title="Logout")
+        self.logout_button = page.locator("button[title='Logout']")
 
     def navigate(self, base_url: str = BASE_URL) -> None:
         self.page.goto(base_url)
-        self.page.get_by_role("heading", name="Login").wait_for()
+        self.login_title.wait_for(state="visible", timeout=10_000)
 
     def fill_username(self, username: str) -> None:
         self.username_input.fill(username)
@@ -61,7 +55,8 @@ class LoginPage:
         self.logout_button.click()
 
     def wait_for_dashboard(self) -> None:
-        self.dashboard_header.wait_for(state="visible", timeout=10_000)
+        """After successful login the Navbar appears with the Logout button."""
+        self.logout_button.wait_for(state="visible", timeout=10_000)
 
     def wait_for_login_page(self) -> None:
         self.login_title.wait_for(state="visible", timeout=10_000)
