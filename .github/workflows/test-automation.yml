@@ -20,18 +20,17 @@ jobs:
 
       - name: Create backend .env
         run: |
-          cat > test-case-generator/backend/.env <<EOF
-          PORT=5001
-          MONGODB_URI=${{ secrets.MONGODB_URI }}
-          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          EOF
+          printf 'PORT=5001\nMONGODB_URI=%s\nOPENAI_API_KEY=%s\n' \
+            "${{ secrets.MONGODB_URI }}" \
+            "${{ secrets.OPENAI_API_KEY }}" \
+            > test-case-generator/backend/.env
 
       - name: Create tests .env
         run: |
-          cat > tests/.env <<EOF
-          TEST_USERNAME=${{ secrets.TEST_USERNAME }}
-          TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
-          EOF
+          printf 'TEST_USERNAME=%s\nTEST_PASSWORD=%s\n' \
+            "${{ secrets.TEST_USERNAME }}" \
+            "${{ secrets.TEST_PASSWORD }}" \
+            > tests/.env
 
       - name: Build and run tests
         working-directory: test-case-generator
