@@ -46,7 +46,10 @@ def test_credentials() -> dict:
 
     Set these in a local tests/.env file (git-ignored) or in your CI secrets.
     """
-    return {"username": "admin", "password": "pass"}
+    return {
+        "username": os.environ.get("TEST_USERNAME", "admin"),
+        "password": os.environ.get("TEST_PASSWORD", "pass"),
+    }
 
 
 @pytest.fixture(scope="session")

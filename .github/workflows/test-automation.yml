@@ -18,6 +18,21 @@ jobs:
       - name: Create reports directory
         run: mkdir -p tests/reports/screenshots
 
+      - name: Create backend .env
+        run: |
+          cat > test-case-generator/backend/.env <<EOF
+          PORT=5001
+          MONGODB_URI=${{ secrets.MONGODB_URI }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          EOF
+
+      - name: Create tests .env
+        run: |
+          cat > tests/.env <<EOF
+          TEST_USERNAME=${{ secrets.TEST_USERNAME }}
+          TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
+          EOF
+
       - name: Build and run tests
         working-directory: test-case-generator
         run: docker compose --profile test run --rm test-runner
