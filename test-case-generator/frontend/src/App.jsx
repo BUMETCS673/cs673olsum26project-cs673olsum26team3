@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_URL } from './config';
 import Navbar from './components/Navbar';
 import ProjectsView from './views/Projects/ProjectsView';
 import DocumentsView from './views/Documents/DocumentsView';
@@ -31,7 +32,7 @@ export default function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects?userId=${user.id}`);
+      const res = await fetch(`${API_URL}/api/projects?userId=${user.id}`);
       const data = await res.json();
       if (res.ok) setProjects(data);
     } catch (err) {
@@ -42,7 +43,7 @@ export default function App() {
   // Handler for creating a new project via API
   const handleCreateProject = async (projectData) => {
     try {
-      const res = await fetch('http://localhost:5001/api/projects', {
+      const res = await fetch(`${API_URL}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...projectData, userId: user.id })
@@ -61,7 +62,7 @@ export default function App() {
   // Handler for deleting a project via API
   const handleDeleteProject = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects/${id}`, {
+      const res = await fetch(`${API_URL}/api/projects/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {

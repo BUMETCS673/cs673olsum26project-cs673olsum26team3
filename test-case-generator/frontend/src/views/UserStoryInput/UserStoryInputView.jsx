@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import './UserStoryInputView.css';
+import { API_URL } from '../../config';
 
 /**
  * UserStoryInputView Component
@@ -50,7 +51,7 @@ export default function UserStoryInputView({ onGenerationComplete, onBack, proje
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5001/api/generate-tests', {
+      const response = await fetch(`${API_URL}/api/generate-tests`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
