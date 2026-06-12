@@ -27,7 +27,7 @@ def a_user_is_logged_in(test_cases_page: TestCasesPage, test_credentials: dict) 
 
 
 @given("the test case dashboard is open")
-def test_case_dashboard_is_open(test_cases_page: TestCasesPage) -> None:
+def given_test_case_dashboard_is_open(test_cases_page: TestCasesPage) -> None:
     test_cases_page.navigate_to_test_cases()
 
 
@@ -49,7 +49,7 @@ def type_into_search_bar(test_cases_page: TestCasesPage, keyword: str) -> None:
 
 
 @then("the test case table is visible")
-def test_case_table_is_visible(test_cases_page: TestCasesPage) -> None:
+def then_test_case_table_is_visible(test_cases_page: TestCasesPage) -> None:
     assert test_cases_page.is_table_visible(), "Test case table is not visible"
 
 
