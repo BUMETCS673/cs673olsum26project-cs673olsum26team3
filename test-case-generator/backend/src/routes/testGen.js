@@ -4,6 +4,7 @@ const { OpenAI } = require('openai');
 const UserStory = require('../models/UserStory');
 const Document = require('../models/Document');
 const Chunk = require('../models/Chunk');
+const authMiddleware = require('../middleware/auth');
 
 // Initialize OpenAI client using GitHub Models API endpoint
 const openai = new OpenAI({
@@ -14,8 +15,9 @@ const openai = new OpenAI({
 /**
  * CT-31/CT-33: Endpoint to generate real AI test cases using GitHub Models (GPT-4o).
  * Implements RAG (Retrieval-Augmented Generation) using Atlas Vector Search.
+ * Protected by authMiddleware.
  */
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     const { requirement, options, projectId } = req.body;
 
     // CT-30: Validate that User Story content is not empty

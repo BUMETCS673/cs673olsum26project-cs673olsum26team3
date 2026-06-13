@@ -7,6 +7,7 @@ const path = require('path');
 const { OpenAI } = require('openai');
 const Document = require('../models/Document');
 const Chunk = require('../models/Chunk');
+const authMiddleware = require('../middleware/auth');
 
 // Initialize OpenAI client for Embeddings
 const openai = new OpenAI({
@@ -47,8 +48,9 @@ const upload = multer({
 /**
  * POST /api/upload
  * Handles multi-file uploads, performs OCR/extraction, and generates Vector Chunks.
+ * Protected by authMiddleware.
  */
-router.post('/', (req, res, next) => {
+router.post('/', authMiddleware, (req, res, next) => {
     upload.array('documents', 10)(req, res, function (err) {
         if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({ error: 'File size exceeds the 20MB limit. Please upload a smaller file.' });
@@ -61,7 +63,7 @@ router.post('/', (req, res, next) => {
     });
 }, async (req, res) => {
     const { projectId } = req.body;
-    console.log(`[DEBUG] Uploading and Vectorizing documents for projectId: ${projectId}`);
+    console.log(`[DEBUG] Uploading and Vectorizing documents for projectId: ${projectId} by user: ${req.user.username}`);
     
     if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
         return res.status(400).json({ error: 'Valid Project ID is required for document context.' });
@@ -133,8 +135,9 @@ router.post('/', (req, res, next) => {
 /**
  * GET /api/upload/:projectId
  * Retrieves all processed documents for a specific project.
+ * Protected by authMiddleware.
  */
-router.get('/:projectId', async (req, res) => {
+router.get('/:projectId', authMiddleware, async (req, res) => {
     const { projectId } = req.params;
 
     try {
@@ -155,8 +158,9 @@ router.get('/:projectId', async (req, res) => {
 /**
  * DELETE /api/upload/:id
  * Removes a document and its associated vector chunks from the database.
+ * Protected by authMiddleware.
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const documentId = req.params.id;
         
