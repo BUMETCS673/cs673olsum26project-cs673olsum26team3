@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
+from pages.test_cases_page import TestCasesPage
 
 # Load tests/.env into os.environ for local runs (no-op when already set by CI/Docker)
 load_dotenv(Path(__file__).parent / ".env")
@@ -19,6 +20,7 @@ load_dotenv(Path(__file__).parent / ".env")
 pytest_plugins = [
     "step_definitions.dashboard_steps",
     "step_definitions.login_steps",
+    "step_definitions.test_cases_steps",
 ]
 
 TESTS_DIR = Path(__file__).parent
@@ -81,6 +83,14 @@ def dashboard_page(page, base_url, mock_upload_api):
     dp = DashboardPage(page)
     dp.navigate(base_url)
     return dp
+
+
+@pytest.fixture
+def test_cases_page(page, base_url, mock_upload_api):
+    """Navigate to the app root and return a TestCasesPage instance."""
+    tc = TestCasesPage(page)
+    tc.navigate(base_url)
+    return tc
 
 
 # ──────────────────────────── Upload API mock ──────────────────────────────────
@@ -209,6 +219,131 @@ def mock_upload_api(page, test_credentials):
                             message: 'Files uploaded and processed successfully!',
                             data: newDocs
                         }}),
+                        {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- GET /api/test-cases/all (management dashboard) ---
+                if (urlStr.includes('/api/test-cases/all') && method === 'GET') {{
+                    const twoDaysAgo = new Date(Date.now() - 172800000).toISOString();
+                    const yesterday = new Date(Date.now() - 86400000).toISOString();
+                    const allTCs = [
+                        {{
+                            id: 'AI-001', storyId: 'story-001',
+                            projectId: TEST_PROJECT_ID, projectName: 'Mock Test Project',
+                            title: 'Verify successful login with valid credentials',
+                            type: 'Functional', priority: 'High',
+                            preconditions: 'User has a registered account',
+                            steps: ['Navigate to login page', 'Enter valid credentials', 'Click Sign In'],
+                            expectedResults: 'User is redirected to the projects dashboard',
+                            createdAt: twoDaysAgo, archived: false, isManual: false
+                        }},
+                        {{
+                            id: 'AI-002', storyId: 'story-001',
+                            projectId: TEST_PROJECT_ID, projectName: 'Mock Test Project',
+                            title: 'Verify login fails with incorrect password',
+                            type: 'Negative', priority: 'High',
+                            preconditions: 'User has a registered account',
+                            steps: ['Navigate to login page', 'Enter wrong password', 'Click Sign In'],
+                            expectedResults: 'An error message is displayed',
+                            createdAt: twoDaysAgo, archived: false, isManual: false
+                        }},
+                        {{
+                            id: 'AI-003', storyId: 'story-002',
+                            projectId: TEST_PROJECT_ID, projectName: 'Mock Test Project',
+                            title: 'Verify PDF document upload completes successfully',
+                            type: 'Functional', priority: 'Medium',
+                            preconditions: 'User is logged in to SpecCheck',
+                            steps: ['Navigate to Documents section', 'Select a valid PDF file', 'Submit the upload'],
+                            expectedResults: 'Document appears in the table with Ready status',
+                            createdAt: yesterday, archived: false, isManual: false
+                        }}
+                    ];
+                    return new Response(
+                        JSON.stringify(allTCs),
+                        {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- PATCH /api/test-cases/:storyId/cases/:tcId/archive ---
+                if (urlStr.match(/\/api\/test-cases\/[^\/]+\/cases\/[^\/]+\/archive/) && method === 'PATCH') {{
+                    return new Response(
+                        JSON.stringify({{ message: 'Toggled', archived: true }}),
+                        {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- PATCH /api/test-cases/:storyId/cases/:tcId (edit) ---
+                if (urlStr.match(/\/api\/test-cases\/[^\/]+\/cases\/[^\/]+$/) && method === 'PATCH') {{
+                    let body = {{}};
+                    try {{ body = JSON.parse(options.body); }} catch(e) {{}}
+                    return new Response(
+                        JSON.stringify({{ message: 'Updated', testCase: body }}),
+                        {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- DELETE /api/test-cases/:storyId/cases/:tcId ---
+                if (urlStr.match(/\/api\/test-cases\/[^\/]+\/cases\/[^\/]+$/) && method === 'DELETE') {{
+                    return new Response(
+                        JSON.stringify({{ message: 'Deleted' }}),
+                        {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- GET /api/generate-tests/:projectId ---
+                if (urlStr.includes('/api/generate-tests/') && method === 'GET') {{
+                    const twoDaysAgo = new Date(Date.now() - 172800000).toISOString();
+                    const yesterday = new Date(Date.now() - 86400000).toISOString();
+                    const mockStories = [
+                        {{
+                            _id: 'story-001',
+                            projectId: TEST_PROJECT_ID,
+                            requirement: 'User login functionality',
+                            generatedAt: twoDaysAgo,
+                            options: {{ manual: false }},
+                            testCases: [
+                                {{
+                                    id: 'AI-001',
+                                    title: 'Verify successful login with valid credentials',
+                                    type: 'Functional',
+                                    priority: 'High',
+                                    preconditions: 'User has a registered account',
+                                    steps: ['Navigate to the login page', 'Enter valid username and password', 'Click Sign In'],
+                                    expectedResults: 'User is redirected to the projects dashboard'
+                                }},
+                                {{
+                                    id: 'AI-002',
+                                    title: 'Verify login fails with incorrect password',
+                                    type: 'Negative',
+                                    priority: 'High',
+                                    preconditions: 'User has a registered account',
+                                    steps: ['Navigate to the login page', 'Enter valid username and wrong password', 'Click Sign In'],
+                                    expectedResults: 'An error message is displayed'
+                                }}
+                            ]
+                        }},
+                        {{
+                            _id: 'story-002',
+                            projectId: TEST_PROJECT_ID,
+                            requirement: 'File upload feature',
+                            generatedAt: yesterday,
+                            options: {{ manual: false }},
+                            testCases: [
+                                {{
+                                    id: 'AI-003',
+                                    title: 'Verify PDF document upload completes successfully',
+                                    type: 'Functional',
+                                    priority: 'Medium',
+                                    preconditions: 'User is logged in to SpecCheck',
+                                    steps: ['Navigate to Documents section', 'Select a valid PDF file', 'Submit the upload'],
+                                    expectedResults: 'Document appears in the table with Ready status'
+                                }}
+                            ]
+                        }}
+                    ];
+                    return new Response(
+                        JSON.stringify(mockStories),
                         {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
                     );
                 }}
