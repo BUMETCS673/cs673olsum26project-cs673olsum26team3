@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 from pages.dashboard_page import DashboardPage
 from pages.login_page import LoginPage
+from pages.registration_page import RegistrationPage
 from pages.test_cases_page import TestCasesPage
 
 # Load tests/.env into os.environ for local runs (no-op when already set by CI/Docker)
@@ -20,6 +21,7 @@ load_dotenv(Path(__file__).parent / ".env")
 pytest_plugins = [
     "step_definitions.dashboard_steps",
     "step_definitions.login_steps",
+    "step_definitions.registration_steps",
     "step_definitions.test_cases_steps",
 ]
 
@@ -86,6 +88,13 @@ def dashboard_page(page, base_url, mock_upload_api):
 
 
 @pytest.fixture
+def registration_page(page, base_url):
+    rp = RegistrationPage(page)
+    rp.navigate(base_url)
+    return rp
+
+
+@pytest.fixture
 def test_cases_page(page, base_url, mock_upload_api):
     """Navigate to the app root and return a TestCasesPage instance."""
     tc = TestCasesPage(page)
@@ -111,6 +120,7 @@ def mock_upload_api(page, test_credentials):
       GET  /api/upload/:id  — returns the current in-memory document list
       POST /api/upload      — adds uploaded files to the in-memory store
       DELETE /api/upload/:id — removes document from the in-memory store
+      POST /api/register   — creates a new user account
     """
     test_user = json.dumps(test_credentials["username"])
     test_pass = json.dumps(test_credentials["password"])
@@ -220,6 +230,40 @@ def mock_upload_api(page, test_credentials):
                             data: newDocs
                         }}),
                         {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
+                    );
+                }}
+
+                // --- POST /api/register ---
+                if (urlStr.includes('/api/register') && method === 'POST') {{
+                    let body = {{}};
+                    try {{ body = JSON.parse(options.body); }} catch(e) {{}}
+                    const existingUsers = new Set([TEST_USERNAME, 'admin']);
+                    if (existingUsers.has(body.username)) {{
+                        return new Response(
+                            JSON.stringify({{ success: false, message: 'This username is already taken' }}),
+                            {{ status: 409, headers: {{ 'Content-Type': 'application/json' }} }}
+                        );
+                    }}
+                    if (body.password && body.password.length < 8) {{
+                        return new Response(
+                            JSON.stringify({{ success: false, message: 'Password must be at least 8 characters' }}),
+                            {{ status: 400, headers: {{ 'Content-Type': 'application/json' }} }}
+                        );
+                    }}
+                    const complexityRegex = /(?=.*\\d)(?=.*[!@#\\$%\\^&\\*])/;
+                    if (body.password && !complexityRegex.test(body.password)) {{
+                        return new Response(
+                            JSON.stringify({{ success: false, message: 'Password must include a number and special character' }}),
+                            {{ status: 400, headers: {{ 'Content-Type': 'application/json' }} }}
+                        );
+                    }}
+                    return new Response(
+                        JSON.stringify({{
+                            success: true,
+                            message: 'Account created successfully!',
+                            user: {{ id: 'mock-new-user-001', username: body.username }},
+                        }}),
+                        {{ status: 201, headers: {{ 'Content-Type': 'application/json' }} }}
                     );
                 }}
 
