@@ -96,22 +96,28 @@ router.post('/', (req, res, next) => {
             await newDoc.save();
 
             // 3. Chunking & Vectorization (RAG Upgrade)
+            // Embedding failures are non-fatal: the document is already saved and
+            // the RAG pipeline falls back to a full-text scan when no vectors exist.
             const chunks = createChunks(extractedText.trim());
-            for (const chunkText of chunks) {
-                if (chunkText.trim().length < 10) continue; // Skip very small chunks
+            try {
+                for (const chunkText of chunks) {
+                    if (chunkText.trim().length < 10) continue; // Skip very small chunks
 
-                const embeddingResponse = await openai.embeddings.create({
-                    model: "text-embedding-3-small",
-                    input: chunkText
-                });
+                    const embeddingResponse = await openai.embeddings.create({
+                        model: "text-embedding-3-small",
+                        input: chunkText
+                    });
 
-                const newChunk = new Chunk({
-                    projectId: projectId.trim(),
-                    documentId: newDoc._id,
-                    text: chunkText,
-                    embedding: embeddingResponse.data[0].embedding
-                });
-                await newChunk.save();
+                    const newChunk = new Chunk({
+                        projectId: projectId.trim(),
+                        documentId: newDoc._id,
+                        text: chunkText,
+                        embedding: embeddingResponse.data[0].embedding
+                    });
+                    await newChunk.save();
+                }
+            } catch (embedErr) {
+                console.warn(`[Warning] Vector generation skipped for ${file.originalname}: ${embedErr.message}`);
             }
 
             processedDocuments.push({
