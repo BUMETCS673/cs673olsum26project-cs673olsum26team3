@@ -84,7 +84,7 @@ describe('POST /api/register', () => {
 
   test('returns 409 when username is already taken', async () => {
     User.findOne.mockResolvedValue({ username: 'alice' });
-    const res = await request(app).post('/api/register').send({ username: 'alice', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'alice', password: 'password123' });
     expect(res.status).toBe(409);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toMatch(/already taken/i);
@@ -92,7 +92,7 @@ describe('POST /api/register', () => {
 
   test('returns 201 with new user on successful registration', async () => {
     User.findOne.mockResolvedValue(null);
-    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'password123' });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.user.username).toBe('bob');
@@ -100,7 +100,7 @@ describe('POST /api/register', () => {
 
   test('returns 500 on database error', async () => {
     User.findOne.mockRejectedValue(new Error('DB error'));
-    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'password123' });
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });

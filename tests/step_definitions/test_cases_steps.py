@@ -27,8 +27,8 @@ def a_user_is_logged_in(test_cases_page: TestCasesPage, test_credentials: dict) 
 
 
 @given("the test case dashboard is open")
-def given_test_case_dashboard_is_open(test_cases_page: TestCasesPage) -> None:
-    test_cases_page.navigate_to_test_cases()
+def given_test_case_dashboard_is_open(test_cases_page: TestCasesPage, seed_api_data: dict) -> None:
+    test_cases_page.navigate_to_test_cases(seed_api_data.get("project_name"))
 
 
 @given("there are multiple test cases in the dashboard")

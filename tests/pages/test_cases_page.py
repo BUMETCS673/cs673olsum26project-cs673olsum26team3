@@ -31,9 +31,17 @@ class TestCasesPage:
         self.page.locator(".login-card button[type='submit']").click()
         self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=10_000)
 
-    def navigate_to_test_cases(self) -> None:
-        """Click 'View Tests' on the first project card and wait for the table."""
-        btn = self.page.get_by_role("button", name="View Tests").first
+    def navigate_to_test_cases(self, project_name: str = None) -> None:
+        """Click 'View Tests' on the named project card (or the first card if not given)."""
+        if project_name:
+            btn = (
+                self.page.locator("div")
+                .filter(has_text=project_name)
+                .get_by_role("button", name="View Tests")
+                .first
+            )
+        else:
+            btn = self.page.get_by_role("button", name="View Tests").first
         btn.wait_for(state="visible", timeout=15_000)
         btn.click()
         self.table.wait_for(state="visible", timeout=10_000)
