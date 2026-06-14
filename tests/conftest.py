@@ -228,7 +228,8 @@ def mock_upload_api(page, test_credentials):
                 if (urlStr.includes('/api/register') && method === 'POST') {{
                     let body = {{}};
                     try {{ body = JSON.parse(options.body); }} catch(e) {{}}
-                    if (body.username === TEST_USERNAME) {{
+                    const existingUsers = new Set([TEST_USERNAME, 'admin']);
+                    if (existingUsers.has(body.username)) {{
                         return new Response(
                             JSON.stringify({{ success: false, message: 'This username is already taken' }}),
                             {{ status: 409, headers: {{ 'Content-Type': 'application/json' }} }}
