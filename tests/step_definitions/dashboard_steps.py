@@ -55,10 +55,14 @@ def all_docs_deleted(dashboard_page: DashboardPage, page) -> None:
 
 
 def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
-    """Register a one-shot dialog handler, run action_fn, then poll until the
-    dialog fires (up to 30 s).  Using page.once() instead of expect_event()
-    avoids a deadlock where Python blocks inside set_input_files() / evaluate()
-    while a synchronous alert() is waiting for a handler.
+    """Register a one-shot dialog handler and run action_fn.
+
+    Polls for 3 s to capture synchronous alerts (validation errors fire during
+    action_fn itself).  Async upload-success alerts arrive later — check_alert
+    handles those with a longer wait so we don't block the When step.
+    Using page.once() instead of expect_event() avoids a deadlock where Python
+    blocks inside set_input_files() / evaluate() while a synchronous alert() is
+    waiting for a handler.
     """
     def _handle(dialog):
         dialog_messages.append(dialog.message)
@@ -67,9 +71,8 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
     page.once("dialog", _handle)
     action_fn()
 
-    # Sync alerts are already captured; for async uploads poll until dialog fires.
-    # Real backend PDF processing (OCR + chunking + embedding) can take 60–90 s.
-    for _ in range(450):  # up to 90 s
+    # Brief poll — enough for synchronous alerts; async alerts are awaited in check_alert.
+    for _ in range(15):  # up to 3 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
@@ -242,7 +245,13 @@ def check_each_row(dashboard_page: DashboardPage) -> None:
 # ── Alerts ──
 
 @then(parsers.parse('an alert appears containing "{expected_text}"'))
-def check_alert(dialog_messages: list, expected_text: str) -> None:
+def check_alert(page, dialog_messages: list, expected_text: str) -> None:
+    # Sync alerts (validation) are already in dialog_messages; async upload-success
+    # alerts may need up to 3 minutes on the real backend (OCR + embedding calls).
+    for _ in range(900):  # up to 180 s
+        if dialog_messages:
+            break
+        page.wait_for_timeout(200)
     assert dialog_messages, "No dialog was captured"
     assert any(expected_text in msg for msg in dialog_messages), (
         f"Expected alert containing '{expected_text}'. Captured: {dialog_messages}"

@@ -76,15 +76,12 @@ class DashboardPage:
             self._create_test_project()
 
         if project_name:
-            # Scope to the card div that has both the h3 title AND the Documents button.
-            # Using .last gives the innermost (most specific) matching div — the card itself.
-            docs_btn = (
-                self.page.locator("div")
-                .filter(has=self.page.locator("h3", has_text=project_name))
-                .filter(has=self.page.get_by_role("button", name="Documents"))
-                .last
-                .get_by_role("button", name="Documents")
-            )
+            # CSS :has() with direct-child combinators targets exactly the card-level div:
+            # card-div > content-div > h3  (project name)
+            # card-div > button-row > button  (Documents / View Tests)
+            # Outer containers like main/grid don't satisfy "> div > h3" at the right depth.
+            card = self.page.locator(f"div:has(> div > h3:has-text('{project_name}'))")
+            docs_btn = card.get_by_role("button", name="Documents")
         else:
             docs_btn = self.page.get_by_role("button", name="Documents").first
 
