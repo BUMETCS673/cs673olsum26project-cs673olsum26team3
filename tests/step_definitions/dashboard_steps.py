@@ -64,7 +64,8 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
     action_fn()
 
     # Sync alerts are already captured; for async uploads poll until dialog fires.
-    for _ in range(150):  # up to 30 s
+    # Real backend PDF processing (OCR + chunking + embedding) can take 60–90 s.
+    for _ in range(450):  # up to 90 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
