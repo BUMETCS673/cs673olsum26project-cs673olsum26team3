@@ -10,20 +10,27 @@ const Chunk = require('../models/Chunk');
  * Retrieves all projects for a specific user from the database.
  */
 router.get('/', async (req, res) => {
-    const { userId } = req.query;
+    const { userId, search } = req.query; // gets users search from frontend
     if (!userId) {
         return res.status(400).json({ message: 'User ID is required' });
     }
 
     try {
-        const projects = await Project.find({ userId }).sort({ createdAt: -1 });
+        let query = { userId };
+
+        // search for project name 
+        if (search && search.trim() !== '') {
+            query.name = { $regex: search.trim(), $options: 'i' };
+        }
+
+        const projects = await Project.find(query).sort({ createdAt: -1 });
+        
         res.json(projects);
     } catch (error) {
         console.error('[Error] Project list retrieval failure:', error);
         res.status(500).json({ message: 'Error retrieving projects' });
     }
 });
-
 /**
  * POST /api/projects
  * Creates a new project for a specific user in the database.

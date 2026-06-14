@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import './ProjectsView.css';
-import { FolderOpen, FileText, Eye, Plus, Trash2, X } from 'lucide-react';
+import { FolderOpen, FileText, Eye, Plus, Trash2, X, Search } from 'lucide-react'; // Added Search icon
 
 /**
  * ProjectsView Component
- * Renders the dashboard showing all available projects.
+ * Renders the dashboard showing all available projects with client-side keyword filtering
  */
 export default function ProjectsView({ projects, documents, onNavigate, onDeleteProject, onNewProject }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newProject, setNewProject] = useState({ name: '', description: '' });
+  
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,6 +22,10 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
       setNewProject({ name: '', description: '' });
     }
   };
+
+  const filteredProjects = projects.filter((project) =>
+    project.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -48,6 +54,33 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
               <span>New Project</span>
             </button>
           </div>
+          {projects.length > 0 && (
+            <div style={{ position: 'relative', marginBottom: '24px', maxWidth: '448px', width: '100%' }}>
+              <div style={{ position: 'absolute', top: '0', bottom: '0', left: '0', paddingLeft: '12px', display: 'flex', alignItems: 'center', pointerEvents: 'none' }}>
+                <Search size={18} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search projects by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  paddingLeft: '40px',
+                  paddingRight: '16px',
+                  paddingTop: '8px',
+                  paddingBottom: '8px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '8px',
+                  color: '#111827',
+                  fontSize: '14px',
+                  outline: 'none'
+                }}
+              />
+            </div>
+          )}
 
           {/* Project Cards Grid / Empty State */}
           {projects.length === 0 ? (
@@ -102,6 +135,16 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
                 <span>Create Your First Project</span>
               </button>
             </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="text-center py-12 border border-dashed border-gray-300 rounded-xl bg-gray-50">
+              <p className="text-gray-500 text-sm">No projects found matching "{searchQuery}"</p>
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="mt-2 text-xs font-medium text-blue-600 hover:underline cursor-pointer"
+              >
+                Clear search query
+              </button>
+            </div>
           ) : (
             <div 
               className="grid gap-6" 
@@ -110,7 +153,7 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
                 gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' 
               }}
             >
-              {projects.map((project) => (
+              {filteredProjects.map((project) => (
                 <div 
                   key={project._id || project.id}
                   style={{
@@ -244,7 +287,7 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyBetween: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: '600' }}>Create New Project</h2>
               <button 
                 onClick={() => setIsModalOpen(false)} 
