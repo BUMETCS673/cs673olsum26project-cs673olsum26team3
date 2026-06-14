@@ -8,6 +8,7 @@ const uploadRouter = require('./routes/upload');
 const testGenRouter = require('./routes/testGen');
 const loginRouter = require('./routes/login');
 const projectsRouter = require('./routes/projects');
+const testCaseManagementRouter = require('./routes/testCaseManagement');
 
 const app = express();
 const PORT = process.env.PORT || 5001;
@@ -29,6 +30,7 @@ app.use('/api', loginRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/generate-tests', testGenRouter);
 app.use('/api/projects', projectsRouter);
+app.use('/api/test-cases', testCaseManagementRouter);
 
 // Initialize backend core service listener
 app.listen(PORT, () => {
