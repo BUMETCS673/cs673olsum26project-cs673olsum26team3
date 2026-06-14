@@ -19,6 +19,7 @@ load_dotenv(Path(__file__).parent / ".env")
 pytest_plugins = [
     "step_definitions.dashboard_steps",
     "step_definitions.login_steps",
+    "step_definitions.projects_steps",
 ]
 
 TESTS_DIR = Path(__file__).parent
@@ -82,6 +83,11 @@ def dashboard_page(page, base_url, mock_upload_api):
     dp.navigate(base_url)
     return dp
 
+@pytest.fixture
+def projects_page(page) -> ProjectsPage:
+    """Returns a freshly instantiated Page Object instance for ProjectsView."""
+    from pages.projects_page import ProjectsPage
+    return ProjectsPage(page) 
 
 # ──────────────────────────── Upload API mock ──────────────────────────────────
 
