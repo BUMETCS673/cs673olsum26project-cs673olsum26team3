@@ -23,8 +23,12 @@ from pages.dashboard_page import DashboardPage
 
 
 @given("the user is logged in")
-def user_is_logged_in(dashboard_page: DashboardPage, test_credentials: dict) -> None:
-    dashboard_page.login(test_credentials["username"], test_credentials["password"])
+def user_is_logged_in(dashboard_page: DashboardPage, test_credentials: dict, seed_api_data: dict) -> None:
+    dashboard_page.login(
+        test_credentials["username"],
+        test_credentials["password"],
+        project_name=seed_api_data.get("project_name"),
+    )
 
 
 @given("the Document Dashboard is open")

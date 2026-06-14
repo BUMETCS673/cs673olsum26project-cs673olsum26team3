@@ -55,31 +55,38 @@ class DashboardPage:
         # After navigating, we land on either login page or projects page
         self.page.wait_for_load_state("networkidle", timeout=15_000)
 
-    def login(self, username: str, password: str) -> None:
-        """Log in and navigate into the first available project's Documents view."""
-        # Fill login form (Login.jsx uses structural selectors, no ids)
+    def login(self, username: str, password: str, project_name: str = None) -> None:
+        """Log in and navigate into the named project's Documents view."""
         self.page.locator(".login-card input[type='text']").fill(username)
         self.page.locator(".login-card input[type='password']").fill(password)
         self.page.locator(".login-card button[type='submit']").click()
 
-        # Wait for the Projects page (h1 "Projects" or Logout button appearing)
+        # Wait for the Projects page (Logout button appearing)
         self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=10_000)
 
-        # Navigate into the first project's Documents view
-        self._open_first_project_documents()
+        self._open_project_documents(project_name)
 
-    def _open_first_project_documents(self) -> None:
-        """Click 'Documents' on the first project card. Creates a project first if none exist."""
-        # Wait until the Projects view has fully loaded: either project cards (Documents button)
-        # or the empty state ("Welcome to SpecCheck") must be present before we decide.
+    def _open_project_documents(self, project_name: str = None) -> None:
+        """Click 'Documents' on the named project card (or first if not given)."""
         docs_locator = self.page.get_by_role("button", name="Documents")
         empty_locator = self.page.get_by_text("Welcome to SpecCheck")
         docs_locator.or_(empty_locator).first.wait_for(state="visible", timeout=15_000)
 
-        docs_btn = self.page.get_by_role("button", name="Documents").first
-        if not docs_btn.is_visible():
-            # Empty state — no projects yet; create one via the UI first
+        if not self.page.get_by_role("button", name="Documents").first.is_visible():
             self._create_test_project()
+
+        if project_name:
+            # Scope to the card div that has both the h3 title AND the Documents button.
+            # Using .last gives the innermost (most specific) matching div — the card itself.
+            docs_btn = (
+                self.page.locator("div")
+                .filter(has=self.page.locator("h3", has_text=project_name))
+                .filter(has=self.page.get_by_role("button", name="Documents"))
+                .last
+                .get_by_role("button", name="Documents")
+            )
+        else:
+            docs_btn = self.page.get_by_role("button", name="Documents").first
 
         docs_btn.wait_for(state="visible", timeout=10_000)
         docs_btn.click()

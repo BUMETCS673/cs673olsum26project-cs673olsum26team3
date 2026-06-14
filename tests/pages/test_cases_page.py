@@ -34,11 +34,14 @@ class TestCasesPage:
     def navigate_to_test_cases(self, project_name: str = None) -> None:
         """Click 'View Tests' on the named project card (or the first card if not given)."""
         if project_name:
+            # Scope to the card div that has both the h3 title AND the View Tests button.
+            # Using .last gives the innermost (most specific) matching div — the card itself.
             btn = (
                 self.page.locator("div")
-                .filter(has_text=project_name)
+                .filter(has=self.page.locator("h3", has_text=project_name))
+                .filter(has=self.page.get_by_role("button", name="View Tests"))
+                .last
                 .get_by_role("button", name="View Tests")
-                .first
             )
         else:
             btn = self.page.get_by_role("button", name="View Tests").first
