@@ -4,8 +4,7 @@ Feature: Project Dashboard Search
   So that I can quickly interact with my automated testing assets
 
   Background:
-    Given the user is logged in
-    And the Projects dashboard view is open
+    Given the user is authenticated and viewing the Projects dashboard
 
   @search @smoke
   Scenario: Search input box is visible on dashboard load

@@ -6,14 +6,10 @@ from pages.login_page import LoginPage
 
 
 # given
-@given("the user is logged in")
-def user_is_logged_in(login_page: LoginPage, test_credentials: dict) -> None:
-    """Submits the login page credentials to establish the authenticated session context."""
+@given("the user is authenticated and viewing the Projects dashboard")
+def user_authenticated_on_projects(login_page: LoginPage, projects_page: ProjectsPage, test_credentials: dict) -> None:
+    """Logs in via the login page and waits for the Projects dashboard heading to appear."""
     login_page.login(test_credentials["username"], test_credentials["password"])
-
-@given("the Projects dashboard view is open")
-def verify_projects_dashboard_is_open(projects_page: ProjectsPage) -> None:
-    """Verifies that the main structural header text 'Projects' is fully visible."""
     projects_page.wait_for_projects_load()
     
 
