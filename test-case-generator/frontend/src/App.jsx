@@ -3,6 +3,7 @@ import Navbar from './components/Navbar';
 import ProjectsView from './views/Projects/ProjectsView';
 import DocumentsView from './views/Documents/DocumentsView';
 import TestCasesView from './views/TestCases/TestCasesView';
+import TestCaseManagementView from './views/TestCaseManagement/TestCaseManagementView';
 import Login from './views/Login/Login';
 import UserStoryInputView from './views/UserStoryInput/UserStoryInputView';
 
@@ -95,7 +96,12 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Global Navbar with unified logout functionality */}
-      <Navbar user={user} onLogout={() => setUser(null)} />
+      <Navbar
+        user={user}
+        onLogout={() => setUser(null)}
+        onLogoClick={() => setCurrentView('projects')}
+        onNavigateToManage={() => setCurrentView('manage-tests')}
+      />
 
       {/* Main Viewport Content Gateway mapping */}
       <div className="pt-2"> 
@@ -128,12 +134,19 @@ export default function App() {
         )}
 
         {currentView === 'testcases' && (
-          <TestCasesView 
-            projectId={selectedProjectId} 
+          <TestCasesView
+            projectId={selectedProjectId}
             projectName={projects.find(p => p._id === selectedProjectId || p.id === selectedProjectId)?.name || 'Project'}
             generatedData={generatedPayload}
-            onBack={() => setCurrentView('projects')} 
+            onBack={() => setCurrentView('projects')}
             onNavigateToInput={() => setCurrentView('userstory-input')}
+          />
+        )}
+
+        {currentView === 'manage-tests' && (
+          <TestCaseManagementView
+            userId={user.id}
+            onBack={() => setCurrentView('projects')}
           />
         )}
       </div>

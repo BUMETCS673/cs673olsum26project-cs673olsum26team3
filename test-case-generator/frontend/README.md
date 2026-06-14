@@ -1,16 +1,47 @@
-# React + Vite
+# SpecCheck – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + Vite frontend for the SpecCheck AI-powered test case generator.
 
-Currently, two official plugins are available:
+## Running Unit Tests
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Frontend (Vitest + React Testing Library)
 
-## React Compiler
+```powershell
+cd test-case-generator/frontend
+npm install
+npm run test:run
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Runs all 6 test files (97 tests) covering Login, ProjectsView, DocumentsView, UserStoryInputView, TestCasesView, and TestCaseManagementView.
 
-## Expanding the ESLint configuration
+To run in watch mode:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```powershell
+npm run test
+```
+
+### Backend (Jest + Supertest)
+
+```powershell
+cd test-case-generator/backend
+npm install
+npm test
+```
+
+Runs all 5 test files (65 tests) covering login/register, projects CRUD, file upload, test generation, and test case management routes.
+
+## Unit Test Files
+
+| File | Tests | Description |
+|------|-------|-------------|
+| `frontend/src/__tests__/Login.test.jsx` | 15 | Login, register, forgot password flows |
+| `frontend/src/__tests__/ProjectsView.test.jsx` | 13 | Project cards, new project modal, delete |
+| `frontend/src/__tests__/DocumentsView.test.jsx` | 10 | Document list, upload zone, empty state |
+| `frontend/src/__tests__/UserStoryInputView.test.jsx` | 17 | Form validation, checkboxes, API call |
+| `frontend/src/__tests__/TestCasesView.test.jsx` | 16 | Test case table, search, row expansion, Create modal |
+| `frontend/src/__tests__/TestCaseManagementView.test.jsx` | 24 | Filters, status pills, edit modal, clear filters |
+| `backend/__tests__/login.test.js` | 15 | POST /login, /register, /change-password |
+| `backend/__tests__/projects.test.js` | 11 | GET/POST/DELETE /projects with cascade delete |
+| `backend/__tests__/upload.test.js` | 10 | File upload validation, PDF, GET docs, DELETE |
+| `backend/__tests__/testGen.test.js` | 11 | AI/manual ID assignment, no-context warning |
+| `backend/__tests__/testCaseManagement.test.js` | 14 | GET all, PATCH edit, archive toggle, DELETE |
