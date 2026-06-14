@@ -41,6 +41,10 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
+  if (password.length < 8) {
+    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+  }
+
   try {
     // Check if user already exists
     const existingUser = await User.findOne({ username });
@@ -84,6 +88,22 @@ router.post('/change-password', async (req, res) => {
   } catch (error) {
     console.error('Password change error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred while updating the password.' });
+  }
+});
+
+/**
+ * DELETE /api/users/:username
+ * Removes a user by username. Used by the test suite teardown to clean up
+ * registration test accounts so they can be re-created on the next CI run.
+ */
+router.delete('/users/:username', async (req, res) => {
+  try {
+    const username = decodeURIComponent(req.params.username);
+    const result = await User.deleteOne({ username });
+    return res.json({ success: true, deleted: result.deletedCount > 0 });
+  } catch (error) {
+    console.error('User delete error:', error);
+    return res.status(500).json({ success: false });
   }
 });
 

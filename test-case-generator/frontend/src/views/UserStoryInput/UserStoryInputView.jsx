@@ -50,7 +50,7 @@ export default function UserStoryInputView({ onGenerationComplete, onBack, proje
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:5001/api/generate-tests', {
+      const response = await fetch('/api/generate-tests', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

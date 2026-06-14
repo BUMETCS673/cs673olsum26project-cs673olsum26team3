@@ -32,7 +32,7 @@ export default function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects?userId=${user.id}`);
+      const res = await fetch(`/api/projects?userId=${user.id}`);
       const data = await res.json();
       if (res.ok) setProjects(data);
     } catch (err) {
@@ -43,7 +43,7 @@ export default function App() {
   // Handler for creating a new project via API
   const handleCreateProject = async (projectData) => {
     try {
-      const res = await fetch('http://localhost:5001/api/projects', {
+      const res = await fetch('/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...projectData, userId: user.id })
@@ -62,7 +62,7 @@ export default function App() {
   // Handler for deleting a project via API
   const handleDeleteProject = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects/${id}`, {
+      const res = await fetch(`/api/projects/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {

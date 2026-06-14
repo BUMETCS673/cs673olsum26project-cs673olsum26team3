@@ -110,4 +110,4 @@ Feature: Test Case Dashboard
   # Acceptance Test 17
   @test_case_dashboard
   Scenario: The page heading contains the project name
-    Then the page heading contains "Mock Test Project"
+    Then the page heading contains "Test Project"

@@ -38,7 +38,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
     if (!projectId) return;
     setIsLoading(true);
     try {
-      const res = await fetch(`http://localhost:5001/api/generate-tests/${projectId}`);
+      const res = await fetch(`/api/generate-tests/${projectId}`);
       const data = await res.json();
       if (res.ok && Array.isArray(data)) {
         let globalIndex = 0;
@@ -87,7 +87,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
     };
 
     try {
-        const res = await fetch('http://localhost:5001/api/generate-tests/manual', {
+        const res = await fetch('/api/generate-tests/manual', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ projectId, testCase: tcToSave })

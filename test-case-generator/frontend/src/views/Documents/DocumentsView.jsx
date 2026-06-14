@@ -21,7 +21,7 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/upload/${projectId}`);
+      const res = await fetch(`/api/upload/${projectId}`);
       const data = await res.json();
       if (res.ok) {
         setDocuments(data);
@@ -60,7 +60,7 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
     files.forEach(file => formData.append('documents', file));
 
     try {
-      const res = await fetch('http://localhost:5001/api/upload', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         body: formData
       });
@@ -109,7 +109,7 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
 
   const handleDeleteDoc = async (docId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/upload/${docId}`, {
+      const res = await fetch(`/api/upload/${docId}`, {
         method: 'DELETE'
       });
       if (res.ok) {

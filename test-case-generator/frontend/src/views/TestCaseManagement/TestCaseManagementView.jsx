@@ -4,7 +4,7 @@ import {
   Trash2, X, FileSpreadsheet, Code,
 } from 'lucide-react';
 
-const BASE = 'http://localhost:5001';
+const BASE = '';
 
 const LABEL_STYLE = {
   display: 'block', fontSize: '13px', fontWeight: '500',

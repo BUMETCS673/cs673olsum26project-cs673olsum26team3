@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from urllib.parse import quote
 from datetime import datetime
 from pathlib import Path
 
@@ -30,6 +31,11 @@ TESTS_DIR = Path(__file__).parent
 FIXTURES_DIR = TESTS_DIR / "fixtures"
 SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 
+BACKEND_URL = os.environ.get("BACKEND_URL", "http://localhost:5001")
+# Set USE_MOCK=true only for local development without a running backend.
+# In CI and Docker, leave it unset so tests exercise the real backend.
+USE_MOCK = os.environ.get("USE_MOCK", "false").lower() == "true"
+
 
 # ─────────────────────────────────── Fixtures ──────────────────────────────────
 
@@ -37,14 +43,6 @@ SCREENSHOTS_DIR = TESTS_DIR / "reports" / "screenshots"
 @pytest.fixture(scope="session")
 def base_url() -> str:
     return os.environ.get("BASE_URL", "http://localhost:5173")
-
-
-@pytest.fixture
-def login_page(page, base_url):
-    """Navigate to the login page and return a LoginPage instance."""
-    lp = LoginPage(page)
-    lp.navigate(base_url)
-    return lp
 
 
 @pytest.fixture(scope="session")
@@ -58,6 +56,138 @@ def test_credentials() -> dict:
         "username": os.environ.get("TEST_USERNAME", "admin"),
         "password": os.environ.get("TEST_PASSWORD", "pass"),
     }
+
+
+@pytest.fixture(scope="session")
+def seed_api_data(playwright, test_credentials):
+    """Seed the real backend with a test user, a project, and 3 manual test cases.
+
+    Runs once per session before any test that depends on a page fixture.
+    When USE_MOCK=true this is a no-op; the JS fetch mock provides all data.
+    Teardown deletes the seeded project (cascade-deletes test cases too).
+    """
+    if USE_MOCK:
+        yield {"project_id": "mock-project-001", "project_name": "Mock Test Project"}
+        return
+
+    ctx = playwright.request.new_context(base_url=BACKEND_URL)
+    # Playwright 1.44 Python does not support json= on APIRequestContext methods.
+    # Use data=json.dumps(...) with an explicit Content-Type header instead.
+    _h = {"Content-Type": "application/json"}
+    project_id = None
+
+    # 1. Register the primary test user — ignore 409 if it already exists.
+    ctx.post("/api/register",
+             data=json.dumps({"username": test_credentials["username"],
+                              "password": test_credentials["password"]}),
+             headers=_h)
+
+    # 2. Ensure "admin" exists so REG-004 (duplicate-username) always passes.
+    ctx.post("/api/register",
+             data=json.dumps({"username": "admin", "password": "Admin!234"}),
+             headers=_h)
+
+    # 3. Login to obtain the userId needed for project creation.
+    login_resp = ctx.post("/api/login",
+                          data=json.dumps({"username": test_credentials["username"],
+                                           "password": test_credentials["password"]}),
+                          headers=_h)
+    user_id = login_resp.json().get("user", {}).get("id")
+
+    # 4. Create the integration-test project.
+    proj_resp = ctx.post("/api/projects",
+                         data=json.dumps({"name": "CI Test Project",
+                                          "description": "Auto-created by the integration test suite",
+                                          "userId": user_id}),
+                         headers=_h)
+    project = proj_resp.json()
+    project_id = project.get("_id")
+
+    # 5. Seed exactly 3 manual test cases — titles mirror the mock so that
+    #    AT2 (search "login" → 2 hits) and AT5/AT15 (total = 3) still pass.
+    seed_cases = [
+        {
+            "title": "Verify successful login with valid credentials",
+            "type": "Functional", "priority": "High",
+            "preconditions": "User has a registered account",
+            "steps": ["Navigate to login page", "Enter valid credentials", "Click Sign In"],
+            "expectedResults": "User is redirected to the projects dashboard",
+        },
+        {
+            "title": "Verify login fails with incorrect password",
+            "type": "Negative", "priority": "High",
+            "preconditions": "User has a registered account",
+            "steps": ["Navigate to login page", "Enter wrong password", "Click Sign In"],
+            "expectedResults": "An error message is displayed",
+        },
+        {
+            "title": "Verify PDF document upload completes successfully",
+            "type": "Functional", "priority": "Medium",
+            "preconditions": "User is logged in to SpecCheck",
+            "steps": [
+                "Navigate to Documents section",
+                "Select a valid PDF file",
+                "Submit the upload",
+            ],
+            "expectedResults": "Document appears in the table with Ready status",
+        },
+    ]
+    for tc in seed_cases:
+        ctx.post("/api/generate-tests/manual",
+                 data=json.dumps({"projectId": project_id, "testCase": tc}),
+                 headers=_h)
+
+    yield {
+        "project_id": project_id,
+        "project_name": "CI Test Project",
+        "user_id": user_id,
+    }
+
+    # Teardown: cascade-delete the seeded project and all its test cases.
+    if project_id:
+        ctx.delete(f"/api/projects/{project_id}")
+    # Remove registration test users so the next CI run can re-register them.
+    for uname in ("brand_new_user_001", "user with spaces", "special_char_user"):
+        ctx.delete(f"/api/users/{quote(uname, safe='')}")
+    ctx.dispose()
+
+
+@pytest.fixture
+def login_page(page, base_url, seed_api_data):
+    """Navigate to the login page and return a LoginPage instance."""
+    lp = LoginPage(page)
+    lp.navigate(base_url)
+    return lp
+
+
+@pytest.fixture
+def projects_page(page, seed_api_data):
+    """Returns a freshly instantiated Page Object instance for ProjectsView."""
+    from pages.projects_page import ProjectsPage
+    return ProjectsPage(page)
+
+
+@pytest.fixture
+def registration_page(page, base_url, seed_api_data):
+    rp = RegistrationPage(page)
+    rp.navigate(base_url)
+    return rp
+
+
+@pytest.fixture
+def dashboard_page(page, base_url, mock_upload_api, seed_api_data):
+    """Navigate to the app root and return a DashboardPage instance."""
+    dp = DashboardPage(page)
+    dp.navigate(base_url)
+    return dp
+
+
+@pytest.fixture
+def test_cases_page(page, base_url, mock_upload_api, seed_api_data):
+    """Navigate to the app root and return a TestCasesPage instance."""
+    tc = TestCasesPage(page)
+    tc.navigate(base_url)
+    return tc
 
 
 @pytest.fixture(scope="session")
@@ -80,54 +210,22 @@ def row_count_store() -> dict:
     return {}
 
 
-@pytest.fixture
-def dashboard_page(page, base_url, mock_upload_api):
-    """Navigate to the app root and return a DashboardPage instance."""
-    dp = DashboardPage(page)
-    dp.navigate(base_url)
-    return dp
-
-@pytest.fixture
-def projects_page(page) -> ProjectsPage:
-    """Returns a freshly instantiated Page Object instance for ProjectsView."""
-    from pages.projects_page import ProjectsPage
-    return ProjectsPage(page) 
-
-@pytest.fixture
-def registration_page(page, base_url):
-    rp = RegistrationPage(page)
-    rp.navigate(base_url)
-    return rp
-
-
-@pytest.fixture
-def test_cases_page(page, base_url, mock_upload_api):
-    """Navigate to the app root and return a TestCasesPage instance."""
-    tc = TestCasesPage(page)
-    tc.navigate(base_url)
-    return tc
-
-
 # ──────────────────────────── Upload API mock ──────────────────────────────────
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def mock_upload_api(page, test_credentials):
-    """Intercept all backend API calls with an in-browser JS fetch mock.
+    """Intercept backend API calls with an in-browser JS fetch mock.
 
-    These are BDD UI tests — they verify application behaviour, not backend
-    integration. Using a mock makes the suite independent of OpenAI, MongoDB,
-    and network conditions so it runs reliably locally and in CI.
+    Only active when USE_MOCK=true. By default (USE_MOCK=false or unset) this
+    fixture is a no-op so all requests reach the real backend.
 
-    Handles:
-      POST /api/login       — credential-aware (correct creds → 200, wrong → 401)
-      GET  /api/projects    — returns one test project so Documents view is reachable
-      POST /api/projects    — creates a project (used by dashboard tests)
-      GET  /api/upload/:id  — returns the current in-memory document list
-      POST /api/upload      — adds uploaded files to the in-memory store
-      DELETE /api/upload/:id — removes document from the in-memory store
-      POST /api/register   — creates a new user account
+    Set USE_MOCK=true only for local development without a running backend.
     """
+    if not USE_MOCK:
+        yield
+        return
+
     test_user = json.dumps(test_credentials["username"])
     test_pass = json.dumps(test_credentials["password"])
 

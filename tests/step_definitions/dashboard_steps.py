@@ -34,7 +34,11 @@ def dashboard_is_open(dashboard_page: DashboardPage) -> None:
 
 @given("the document table has at least 1 row")
 def table_has_rows(dashboard_page: DashboardPage) -> None:
-    """Assumes the test project has at least one document (seeded by mock or real backend)."""
+    count = dashboard_page.get_table_row_count()
+    assert count >= 1, (
+        f"Expected at least 1 document in the table but found {count}. "
+        "Upload scenarios must run before delete scenarios."
+    )
 
 
 @given("all documents have been deleted")

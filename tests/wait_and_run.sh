@@ -2,8 +2,10 @@
 BACKEND="${BACKEND_URL:-http://backend-service:5001}"
 FRONTEND="${BASE_URL:-http://frontend-service:5173}"
 
-# Treat any HTTP response (including 4xx) as "server is up".
+# Treat any HTTP response (including 4xx/5xx) as "server is up".
 # Only a connection error or timeout means the server isn't ready yet.
+# MongoDB connectivity is validated by the seed_api_data pytest fixture,
+# which calls real API endpoints and fails loudly if the DB is unreachable.
 http_ready() {
     URL="$1" python -c "
 import urllib.request, os, sys
