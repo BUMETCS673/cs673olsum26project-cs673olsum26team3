@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~35%
+// AI-Assisted Areas: Troubleshot window.confirm jsdom limitation, helped fix classList.contains assertion
+// Human Contributions: Wrote project card and modal tests, implemented navigation and form submit test cases
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import ProjectsView from '../views/Projects/ProjectsView';

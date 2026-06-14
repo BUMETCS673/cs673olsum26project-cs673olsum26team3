@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~40%
+// AI-Assisted Areas: Helped with row expansion click pattern and type filter header test
+// Human Contributions: Implemented search filter tests, Create modal tests, AI-xxx ID assertions, empty state test
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TestCasesView from '../views/TestCases/TestCasesView';

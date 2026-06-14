@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~30%
+// AI-Assisted Areas: Helped configure Multer mock and file buffer setup
+// Human Contributions: Wrote file validation tests, defined upload constraints (10-file limit, 20 MB, file types)
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 const request = require('supertest');
 const express = require('express');
 

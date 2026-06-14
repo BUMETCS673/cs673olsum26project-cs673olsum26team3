@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~35%
+// AI-Assisted Areas: Helped with archive toggle test structure and assertions
+// Human Contributions: Implemented CRUD test scenarios, defined archive/restore behavior and user-scoped query tests
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 const request = require('supertest');
 const express = require('express');
 

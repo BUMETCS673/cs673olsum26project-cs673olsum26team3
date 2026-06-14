@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~45%
+// AI-Assisted Areas: Fixed duplicate element issue with getAllByText, helped with selectOptions dropdown tests
+// Human Contributions: Implemented status pill filter tests, clear filter tests, edit modal tests, and search filter scenarios
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import TestCaseManagementView from '../views/TestCaseManagement/TestCaseManagementView';

@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~35%
+// AI-Assisted Areas: Helped fix heading query using getByRole to resolve multiple matches
+// Human Contributions: Wrote checkbox interaction tests, implemented form validation and API call test scenarios
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import UserStoryInputView from '../views/UserStoryInput/UserStoryInputView';

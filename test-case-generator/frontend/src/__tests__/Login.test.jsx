@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~40%
+// AI-Assisted Areas: Helped fix userEvent patterns and mode-switching assertions
+// Human Contributions: Implemented login, register, and forgot password test cases, defined validation and error scenarios
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Login from '../views/Login/Login';

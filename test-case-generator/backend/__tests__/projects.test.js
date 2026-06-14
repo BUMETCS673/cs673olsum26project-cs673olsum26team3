@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~35%
+// AI-Assisted Areas: Assisted with Mongoose model mock structure
+// Human Contributions: Implemented cascade delete test scenarios, defined CRUD test cases and expected behavior
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 const request = require('supertest');
 const express = require('express');
 

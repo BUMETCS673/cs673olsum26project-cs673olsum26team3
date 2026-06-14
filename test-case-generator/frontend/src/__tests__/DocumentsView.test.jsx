@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~30%
+// AI-Assisted Areas: Helped fix button label mismatch and fetch mock setup
+// Human Contributions: Implemented document list tests, wrote upload zone and empty state test cases
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import DocumentsView from '../views/Documents/DocumentsView';

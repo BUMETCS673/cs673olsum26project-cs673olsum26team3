@@ -1,3 +1,10 @@
+// AI-USAGE SUMMARY
+// Tools: Claude (Claude Code)
+// Overall AI Contribution: ~40%
+// AI-Assisted Areas: Assisted with OpenAI and vector search mock setup
+// Human Contributions: Implemented AI vs manual ID sequencing tests (AI-001, HU-001), wrote no-context warning test
+// Notes: AI-generated code was significantly refactored and tested before integration
+
 const request = require('supertest');
 const express = require('express');
 
