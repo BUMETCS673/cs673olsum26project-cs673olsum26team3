@@ -1,8 +1,8 @@
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
-// Overall AI Contribution: ~45%
-// AI-Assisted Areas: Fixed duplicate element issue with getAllByText, helped with selectOptions dropdown tests
-// Human Contributions: Implemented status pill filter tests, clear filter tests, edit modal tests, and search filter scenarios
+// Overall AI Contribution: ~60%
+// AI-Assisted Areas: Fixed duplicate element issue with getAllByText, helped with selectOptions dropdown tests and implemented tet case filtering scenarios 
+// Human Contributions: Implemented status pill filter tests, clear filter tests, edit modal tests
 // Notes: AI-generated code was significantly refactored and tested before integration
 
 import { render, screen, waitFor } from '@testing-library/react';

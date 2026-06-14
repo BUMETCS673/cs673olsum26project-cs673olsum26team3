@@ -1,8 +1,8 @@
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
 // Overall AI Contribution: ~35%
-// AI-Assisted Areas: Helped fix heading query using getByRole to resolve multiple matches
-// Human Contributions: Wrote checkbox interaction tests, implemented form validation and API call test scenarios
+// AI-Assisted Areas: Helped fix heading query using getByRole to resolve multiple matches and implemented API call test scenarios
+// Human Contributions: Wrote checkbox interaction tests, implemented form validation
 // Notes: AI-generated code was significantly refactored and tested before integration
 
 import { render, screen, waitFor } from '@testing-library/react';

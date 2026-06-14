@@ -1,6 +1,6 @@
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
-// Overall AI Contribution: ~40%
+// Overall AI Contribution: ~50%
 // AI-Assisted Areas: Mock setup for User model, bcrypt and JWT mocking
 // Human Contributions: Wrote auth test scenarios (login, register, password change), defined edge cases and expected error messages
 // Notes: AI-generated code was significantly refactored and tested before integration

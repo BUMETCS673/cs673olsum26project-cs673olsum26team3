@@ -1,6 +1,6 @@
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
-// Overall AI Contribution: ~35%
+// Overall AI Contribution: ~55%
 // AI-Assisted Areas: Troubleshot window.confirm jsdom limitation, helped fix classList.contains assertion
 // Human Contributions: Wrote project card and modal tests, implemented navigation and form submit test cases
 // Notes: AI-generated code was significantly refactored and tested before integration
