@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useSession } from "../../context/SessionManager";
 import './Login.css';
 
@@ -33,7 +33,7 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    if (mode === 'register') {
+    if (mode === 'register' || mode === 'forgot') {
       const passwordComplexityRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
       if (!passwordComplexityRegex.test(password)) {
         setError(
@@ -155,7 +155,7 @@ export default function Login({ onLogin }) {
         <div className="toggle-mode">
           {mode === 'login' && (
             <p>
-              No account?{' '}              
+              No account?{' '}
               <span className="register-link" onClick={() => switchMode('register')}>
                 Register
               </span>
@@ -164,7 +164,7 @@ export default function Login({ onLogin }) {
 
           {mode === 'register' && (
             <p>
-               Already have an account?{' '}   
+               Already have an account?{' '}
               <span className="register-link" onClick={() => switchMode('login')}>
                 Back to login
               </span>

@@ -1,10 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const SALT_ROUNDS = 10;
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 
 /**
  * POST /api/login
@@ -18,35 +17,38 @@ router.post('/login', async (req, res) => {
   }
 
   try {
-    // Find user by username only
-    const user = await User.findOne({ username });
+    // Explicitly select password since it is excluded by default in schema
+    const user = await User.findOne({ username }).select('+password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
     }
 
-    // Compare provided password against stored hash
-    const passwordMatch = await bcrypt.compare(password, user.password);
-    if (!passwordMatch) {
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
     }
 
-    // Issue JWT token (expires in 2 hours)
     const token = jwt.sign(
       { id: user._id, username: user.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '2h' }
+      JWT_SECRET,
+      { expiresIn: '24h' }
     );
 
-    return res.json({ success: true, token, user: { id: user._id, username: user.username } });
+    return res.json({
+      success: true,
+      token,
+      user: { id: user._id, username: user.username }
+    });
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, message: 'An error occurred on the server. Please try again.' });
+    return res.status(500).json({ success: false, message: 'An error occurred on the server.' });
   }
 });
 
 /**
  * POST /api/register
- * Creates a new user record with a hashed password.
+ * Creates a new user record in the MongoDB database.
+ * Password hashing is handled by the User model's pre-save hook.
  */
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
@@ -56,7 +58,6 @@ router.post('/register', async (req, res) => {
   }
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
@@ -70,9 +71,7 @@ router.post('/register', async (req, res) => {
       return res.status(409).json({ success: false, message: 'This username is already taken' });
     }
 
-    // Hash password before storing
-    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
-    const newUser = new User({ username, password: hashedPassword });
+    const newUser = new User({ username, password });
     await newUser.save();
 
     return res.status(201).json({
@@ -82,13 +81,14 @@ router.post('/register', async (req, res) => {
     });
   } catch (error) {
     console.error('Registration error:', error);
-    return res.status(500).json({ success: false, message: 'An error occurred during registration. Please try again.' });
+    return res.status(500).json({ success: false, message: 'An error occurred during registration.' });
   }
 });
 
 /**
  * POST /api/change-password
- * Updates password after verifying the current password.
+ * Updates the password for an existing user.
+ * Password hashing is handled by the User model's pre-save hook.
  */
 router.post('/change-password', async (req, res) => {
   const { username, currentPassword, newPassword } = req.body;
@@ -97,20 +97,26 @@ router.post('/change-password', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter your username, current password, and new password' });
   }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+    });
+  }
+
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).select('+password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Verify current password before allowing change
-    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+    const passwordMatch = await user.comparePassword(currentPassword);
     if (!passwordMatch) {
       return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     }
 
-    // Hash and save the new password
-    user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    user.password = newPassword;
     await user.save();
 
     return res.json({ success: true, message: 'Password updated successfully!' });
@@ -118,6 +124,15 @@ router.post('/change-password', async (req, res) => {
     console.error('Password change error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred while updating the password.' });
   }
+});
+
+/**
+ * POST /api/logout
+ * Handles user logout. For JWT/sessionless, it's primarily a client-side action,
+ * but this endpoint provides a hook for future server-side cleanup.
+ */
+router.post('/logout', (req, res) => {
+  return res.json({ success: true, message: 'Successfully logged out' });
 });
 
 module.exports = router;

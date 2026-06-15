@@ -6,6 +6,7 @@ import TestCasesView from './views/TestCases/TestCasesView';
 import TestCaseManagementView from './views/TestCaseManagement/TestCaseManagementView';
 import Login from './views/Login/Login';
 import UserStoryInputView from './views/UserStoryInput/UserStoryInputView';
+import { authFetch } from './utils/api';
 
 import { useSession } from "./context/SessionManager";
 
@@ -22,6 +23,19 @@ export default function App() {
   const [documents, setDocuments] = useState([]);
   const [generatedPayload, setGeneratedPayload] = useState(null);
 
+  const handleLogout = async () => {
+    try {
+      await fetch('http://localhost:5001/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Error during backend logout:', err);
+    }
+    logout();
+  };
+
+  const authorizedRequest = async (url, options = {}) => {
+    return authFetch(url, options, handleLogout);
+  };
+
   // Fetch projects when user exists
   useEffect(() => {
     if (user?.id) {
@@ -31,9 +45,7 @@ export default function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(
-        `http://localhost:5001/api/projects?userId=${user.id}`
-      );
+      const res = await authorizedRequest(`http://localhost:5001/api/projects?userId=${user.id}`);
       const data = await res.json();
 
       if (res.ok) setProjects(data);
@@ -44,7 +56,7 @@ export default function App() {
 
   const handleCreateProject = async (projectData) => {
     try {
-      const res = await fetch('http://localhost:5001/api/projects', {
+      const res = await authorizedRequest('http://localhost:5001/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -68,10 +80,9 @@ export default function App() {
 
   const handleDeleteProject = async (id) => {
     try {
-      const res = await fetch(
-        `http://localhost:5001/api/projects/${id}`,
-        { method: 'DELETE' }
-      );
+      const res = await authorizedRequest(`http://localhost:5001/api/projects/${id}`, {
+        method: 'DELETE'
+      });
 
       if (res.ok) {
         setProjects((prev) => prev.filter((p) => p._id !== id));
@@ -90,10 +101,6 @@ export default function App() {
   const handleGenerationComplete = (data) => {
     setGeneratedPayload(data);
     setCurrentView('testcases');
-  };
-
-  const handleLogout = () => {
-    logout(); // ✅ USE SESSION MANAGER
   };
 
   // LOGIN GATE
