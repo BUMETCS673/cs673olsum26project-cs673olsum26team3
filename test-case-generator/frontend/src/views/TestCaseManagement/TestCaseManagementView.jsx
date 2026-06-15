@@ -85,13 +85,15 @@ export default function TestCaseManagementView({ userId, onBack }) {
     if (fStatus === 'Active'   &&  tc.archived) return false;
     if (fStatus === 'Archived' && !tc.archived) return false;
     if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      tc.title?.toLowerCase().includes(q)           ||
-      tc.preconditions?.toLowerCase().includes(q)   ||
-      tc.expectedResults?.toLowerCase().includes(q) ||
-      tc.projectName?.toLowerCase().includes(q)     ||
-      (tc.steps || []).some(s => s.toLowerCase().includes(q))
+    
+    const keywords = search.toLowerCase().split(/\s+/).filter(Boolean);
+    return keywords.every(kw => 
+      (tc.id || '').toLowerCase().includes(kw)              ||
+      (tc.title || '').toLowerCase().includes(kw)           ||
+      (tc.preconditions || '').toLowerCase().includes(kw)   ||
+      (tc.expectedResults || '').toLowerCase().includes(kw) ||
+      (tc.projectName || '').toLowerCase().includes(kw)     ||
+      (tc.steps || []).some(s => s.toLowerCase().includes(kw))
     );
   }), [testCases, fProject, fType, fPriority, fStatus, search]);
 

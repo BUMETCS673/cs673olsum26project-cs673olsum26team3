@@ -67,6 +67,18 @@ router.post('/', async (req, res) => {
             }
         }
 
+        // Fetch all existing test cases for this project to provide context to the AI
+        const existingStories = await UserStory.find({ projectId });
+        const existingTestCases = existingStories.flatMap(story => (story.testCases || []).map(tc => ({
+            id: tc.id,
+            title: tc.title,
+            type: tc.type
+        })));
+
+        const existingContext = existingTestCases.length > 0 
+            ? `\nExisting Test Cases in this project:\n${existingTestCases.map(tc => `- ${tc.id}: ${tc.title} (${tc.type})`).join('\n')}`
+            : '';
+
         // Construct the AI Prompt based on selected options
         let typesToGenerate = [];
         if (options.positive) typesToGenerate.push('Functional/Positive Test Cases');
@@ -80,11 +92,13 @@ router.post('/', async (req, res) => {
             
             Product Context:
             ${contextAvailable ? groundedContext : 'No specific project documentation provided.'}
+            ${existingContext}
             
             Requirements:
             1. ONLY generate the following types of test cases: ${typesToGenerate.join(', ')}.
-            2. Do NOT generate any other types of test cases.
-            3. Format each test case as a JSON object with:
+            2. Do NOT duplicate the "Existing Test Cases" listed above.
+            3. Do NOT generate any other types of test cases.
+            4. Format each test case as a JSON object with:
                - id (string, e.g., TC-001)
                - title (string)
                - preconditions (string)

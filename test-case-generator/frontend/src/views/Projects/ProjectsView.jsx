@@ -23,9 +23,14 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
     }
   };
 
-  const filteredProjects = projects.filter((project) =>
-    project.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProjects = projects.filter((project) => {
+    if (!searchQuery.trim()) return true;
+    const keywords = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+    return keywords.every(kw => 
+      project.name.toLowerCase().includes(kw) ||
+      (project.description || '').toLowerCase().includes(kw)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-white">
@@ -34,7 +39,12 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
           {/* Header section with Title and New Project action */}
           <div className="mb-8 flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
+              <div className="flex items-center gap-3 mb-1">
+                <h1 className="text-2xl font-semibold text-gray-900">Projects</h1>
+                <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-gray-200">
+                  {projects.length} {projects.length === 1 ? 'Project' : 'Projects'}
+                </span>
+              </div>
               <p className="text-sm text-gray-600">Manage your test generation projects</p>
             </div>
             <button 

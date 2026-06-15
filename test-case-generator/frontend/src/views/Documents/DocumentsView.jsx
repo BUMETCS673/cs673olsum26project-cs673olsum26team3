@@ -161,14 +161,19 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
         {/* View Header Section */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-1">
-              Documents <span className="text-gray-400 mx-2">/</span> {projectName}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-semibold text-gray-900">
+                Documents <span className="text-gray-400 mx-2">/</span> {projectName}
+              </h1>
+              <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-gray-200">
+                {documents.length} {documents.length === 1 ? 'File' : 'Files'}
+              </span>
+            </div>
             <p className="text-sm text-gray-600">Upload documents for this specific project</p>
           </div>
           <button 
             onClick={onNavigateToInput}
-            className="flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 cursor-pointer"
+            className="flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-6 py-2 text-sm font-medium text-purple-700 cursor-pointer whitespace-nowrap"
             style={{
               transition: 'all 0.2s ease',
             }}
