@@ -312,3 +312,4 @@ def check_not_has_class(dashboard_page: DashboardPage, css_class: str) -> None:
     assert css_class not in classes, (
         f"CSS class '{css_class}' should not be present. Classes: '{classes}'"
     )
+

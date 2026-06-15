@@ -164,6 +164,59 @@ pytest --headed --slowmo=500   # visible browser, slow motion
 
 ---
 
+## Unit Tests
+
+In addition to the BDD end-to-end tests, the project includes unit tests for both the backend routes and frontend React components.
+
+### Frontend Unit Tests (Vitest + React Testing Library)
+
+```powershell
+cd test-case-generator/frontend
+npm install
+npm run test:run
+```
+
+Runs 97 tests across 6 component test files. To run in watch mode:
+
+```powershell
+npm run test
+```
+
+### Backend Unit Tests (Jest + Supertest)
+
+```powershell
+cd test-case-generator/backend
+npm install
+npm test
+```
+
+Runs 65 tests across 5 route test files. No running server, MongoDB, or OpenAI key is required — all dependencies are mocked.
+
+### Unit Test Files
+
+**Frontend** (`test-case-generator/frontend/src/__tests__/`)
+
+| File | Tests | What it covers |
+| :--- | :---: | :--- |
+| `Login.test.jsx` | 15 | Login, register, forgot password flows, validation, API errors |
+| `ProjectsView.test.jsx` | 13 | Project cards, empty state, new project modal, navigation |
+| `DocumentsView.test.jsx` | 10 | Document list, upload zone, empty state, file input |
+| `UserStoryInputView.test.jsx` | 17 | Form validation, checkbox interaction, API call, warning messages |
+| `TestCasesView.test.jsx` | 16 | Test case table, search/filter, row expansion, Create modal |
+| `TestCaseManagementView.test.jsx` | 24 | Multi-filter, status pills, edit modal, archive/active filtering |
+
+**Backend** (`test-case-generator/backend/__tests__/`)
+
+| File | Tests | What it covers |
+| :--- | :---: | :--- |
+| `login.test.js` | 15 | POST /login, /register, /change-password — success and error paths |
+| `projects.test.js` | 11 | GET/POST/DELETE /projects with cascade delete |
+| `upload.test.js` | 10 | File upload validation, PDF processing, GET docs, DELETE |
+| `testGen.test.js` | 11 | AI/manual ID assignment (AI-001, HU-001), no-context warning |
+| `testCaseManagement.test.js` | 14 | GET all, PATCH edit, archive toggle, DELETE test cases |
+
+---
+
 ## CI/CD
 
 GitHub Actions (`.github/workflows/test-automation.yml`) triggers on PRs to `development` or `main`:
