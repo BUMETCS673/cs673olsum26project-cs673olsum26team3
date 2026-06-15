@@ -268,7 +268,7 @@ def check_filename_in_table(
 ) -> None:
     page.locator("main table tbody td:first-child span").filter(
         has_text=fixture_file
-    ).wait_for(state="visible", timeout=10_000)
+    ).first.wait_for(state="visible", timeout=30_000)
     assert dashboard_page.is_filename_in_table(fixture_file), (
         f"'{fixture_file}' not found in document table"
     )

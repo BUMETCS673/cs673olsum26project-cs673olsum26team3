@@ -88,6 +88,9 @@ class DashboardPage:
         docs_btn.wait_for(state="visible", timeout=10_000)
         docs_btn.click()
         self.page.locator("main h1").wait_for(state="visible", timeout=10_000)
+        # Wait for the initial fetchDocuments() GET request to settle so that
+        # the document table is populated before any step reads its row count.
+        self.page.wait_for_load_state("networkidle", timeout=15_000)
 
     def _create_test_project(self) -> None:
         """Create a test project via the UI (used when the account has no projects yet)."""
