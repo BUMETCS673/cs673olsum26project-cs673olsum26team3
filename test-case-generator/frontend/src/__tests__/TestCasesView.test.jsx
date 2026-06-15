@@ -99,13 +99,13 @@ describe('TestCasesView – header elements', () => {
   test('renders the Create button', async () => {
     setupFetch();
     renderView();
-    expect(await screen.findByRole('button', { name: /create/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /create test case/i })).toBeInTheDocument();
   });
 
   test('renders the Generate button', async () => {
     setupFetch();
     renderView();
-    expect(await screen.findByRole('button', { name: /generate/i })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /generate tests/i })).toBeInTheDocument();
   });
 });
 
@@ -179,16 +179,16 @@ describe('TestCasesView – Create manual test case modal', () => {
   test('opens the Create modal when Create button is clicked', async () => {
     setupFetch();
     renderView();
-    await screen.findByRole('button', { name: /create/i });
-    await userEvent.click(screen.getByRole('button', { name: /^create$/i }));
+    await screen.findByRole('button', { name: /create test case/i });
+    await userEvent.click(screen.getByRole('button', { name: /^create test case$/i }));
     expect(await screen.findByText(/create manual test case/i)).toBeInTheDocument();
   });
 
   test('closes the modal when Cancel is clicked', async () => {
     setupFetch();
     renderView();
-    await screen.findByRole('button', { name: /^create$/i });
-    await userEvent.click(screen.getByRole('button', { name: /^create$/i }));
+    await screen.findByRole('button', { name: /^create test case$/i });
+    await userEvent.click(screen.getByRole('button', { name: /^create test case$/i }));
     await screen.findByText(/create manual test case/i);
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
     await waitFor(() =>

@@ -138,15 +138,16 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
       if (!typeMatch || !priorityMatch) return false;
       if (!searchQuery.trim()) return true;
 
-      const q = searchQuery.toLowerCase();
-      return (
-        tc.title?.toLowerCase().includes(q) ||
-        tc.preconditions?.toLowerCase().includes(q) ||
-        tc.expectedResults?.toLowerCase().includes(q) ||
-        (tc.steps || []).some(s => s.toLowerCase().includes(q))
+      const keywords = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
+      return keywords.every(kw => 
+        (tc.id || '').toLowerCase().includes(kw) ||
+        (tc.title || '').toLowerCase().includes(kw) ||
+        (tc.preconditions || '').toLowerCase().includes(kw) ||
+        (tc.expectedResults || '').toLowerCase().includes(kw) ||
+        (tc.steps || []).some(s => s.toLowerCase().includes(kw))
       );
-    });
-  }, [testCases, filterType, filterPriority, searchQuery]);
+      });
+      }, [testCases, filterType, filterPriority, searchQuery]);
 
   const getProfessionalFileName = (extension) => {
     const date = new Date().toISOString().split('T')[0];
@@ -254,16 +255,21 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
 
         <div className="mb-8 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <h1 className="text-2xl font-semibold text-gray-900 mb-1 truncate">
-              Test Cases <span className="text-gray-400 mx-2">/</span> {projectName || 'Project'}
-            </h1>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-semibold text-gray-900 truncate">
+                Test Cases <span className="text-gray-400 mx-2">/</span> {projectName || 'Project'}
+              </h1>
+              <span className="bg-gray-100 text-gray-600 px-2.5 py-0.5 rounded-full text-xs font-semibold border border-gray-200">
+                {testCases.length} {testCases.length === 1 ? 'Test Case' : 'Test Cases'}
+              </span>
+            </div>
             <p className="text-sm text-gray-600">Review and organize test metrics for this project</p>
           </div>
           
           <div className="flex items-center gap-3 flex-shrink-0">
             <button 
               onClick={onNavigateToInput}
-              className="flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-4 py-2 text-sm font-medium text-purple-700 cursor-pointer"
+              className="flex items-center gap-2 rounded-lg border border-purple-300 bg-purple-50 px-6 py-2 text-sm font-medium text-purple-700 cursor-pointer whitespace-nowrap"
               style={{ transition: 'all 0.2s ease' }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#f3e8ff';
@@ -277,7 +283,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
               }}
             >
               <PenTool size={16} />
-              <span>Generate</span>
+              <span>Generate Tests</span>
             </button>
 
             {/* Interactive Export Dropdown (Scenario 6) */}
@@ -288,7 +294,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
             >
               <button 
                 style={{ backgroundColor: '#2563eb', transition: 'all 0.2s ease' }}
-                className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white cursor-pointer shadow-sm"
+                className="flex items-center gap-2 rounded-lg px-6 py-2 text-sm font-medium text-white cursor-pointer shadow-sm whitespace-nowrap"
                 onMouseOver={(e) => {
                   e.currentTarget.style.backgroundColor = '#1d4ed8';
                   e.currentTarget.style.transform = 'translateY(-1px)';
@@ -331,7 +337,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
 
             <button 
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 rounded-lg bg-black px-4 py-2 text-sm text-white cursor-pointer"
+              className="flex items-center gap-2 rounded-lg bg-black px-6 py-2 text-sm text-white cursor-pointer whitespace-nowrap"
               style={{ transition: 'all 0.2s ease' }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = '#374151';
@@ -343,7 +349,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
               }}
             >
               <Plus size={16} />
-              <span>Create</span>
+              <span>Create Test Case</span>
             </button>
           </div>
         </div>
