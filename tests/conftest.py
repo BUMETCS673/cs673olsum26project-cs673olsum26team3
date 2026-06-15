@@ -76,16 +76,33 @@ def seed_api_data(playwright, test_credentials):
     _h = {"Content-Type": "application/json"}
     project_id = None
 
-    # 1. Register the primary test user — ignore 409 if it already exists.
-    ctx.post("/api/register",
-             data=json.dumps({"username": test_credentials["username"],
-                              "password": test_credentials["password"]}),
-             headers=_h)
+    # 1. Register the primary test user.
+    #    If the user already exists (409), delete it first and re-register.
+    #    This guarantees the stored password is a fresh bcrypt hash — critical
+    #    after the User model was updated to hash passwords, because any user
+    #    created before that change has a plain-text password that bcrypt.compare
+    #    will never match, causing every login attempt to fail.
+    reg_resp = ctx.post("/api/register",
+                        data=json.dumps({"username": test_credentials["username"],
+                                         "password": test_credentials["password"]}),
+                        headers=_h)
+    if reg_resp.status == 409:
+        ctx.delete(f"/api/users/{quote(test_credentials['username'], safe='')}")
+        ctx.post("/api/register",
+                 data=json.dumps({"username": test_credentials["username"],
+                                  "password": test_credentials["password"]}),
+                 headers=_h)
 
     # 2. Ensure "admin" exists so REG-004 (duplicate-username) always passes.
-    ctx.post("/api/register",
-             data=json.dumps({"username": "admin", "password": "Admin!234"}),
-             headers=_h)
+    #    Same re-create logic applies to guard against stale plain-text passwords.
+    admin_reg = ctx.post("/api/register",
+                         data=json.dumps({"username": "admin", "password": "Admin!234"}),
+                         headers=_h)
+    if admin_reg.status == 409:
+        ctx.delete("/api/users/admin")
+        ctx.post("/api/register",
+                 data=json.dumps({"username": "admin", "password": "Admin!234"}),
+                 headers=_h)
 
     # 3. Login to obtain the userId needed for project creation.
     login_resp = ctx.post("/api/login",
@@ -161,8 +178,17 @@ def seed_api_data(playwright, test_credentials):
     # Teardown: cascade-delete the seeded project and all its test cases.
     if project_id:
         ctx.delete(f"/api/projects/{project_id}")
-    # Remove registration test users so the next CI run can re-register them.
-    for uname in ("brand_new_user_001", "user with spaces", "special_char_user"):
+    # Remove all test users so the next CI run re-registers them with fresh bcrypt hashes.
+    # TEST_USERNAME and admin must be deleted so their passwords don't become stale
+    # if the User model's hashing logic ever changes again.
+    cleanup_users = [
+        test_credentials["username"],
+        "admin",
+        "brand_new_user_001",
+        "user with spaces",
+        "special_char_user",
+    ]
+    for uname in cleanup_users:
         ctx.delete(f"/api/users/{quote(uname, safe='')}")
     ctx.dispose()
 
