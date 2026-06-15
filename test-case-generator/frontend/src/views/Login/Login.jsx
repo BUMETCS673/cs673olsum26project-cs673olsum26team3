@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import './Login.css';
 
 /**
@@ -38,6 +38,16 @@ export default function Login({ onLogin }) {
     if ((mode === 'register' || mode === 'forgot') && password !== confirmPassword) {
       setError('Passwords do not match. Please re-type them.');
       return;
+    }
+
+    if (mode === 'register') {
+      const passwordComplexityRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+      if (!passwordComplexityRegex.test(password)) {
+        setError(
+          'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+        );
+        return;
+      }
     }
 
     let endpoint = '/api/login';

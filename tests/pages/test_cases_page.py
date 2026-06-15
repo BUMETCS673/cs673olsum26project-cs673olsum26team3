@@ -98,3 +98,123 @@ class TestCasesPage:
     def type_search_query(self, query: str) -> None:
         self.search_input.fill(query)
         self.page.wait_for_timeout(300)
+
+    def clear_search(self) -> None:
+        self.search_input.fill("")
+        self.page.wait_for_timeout(300)
+
+    # ── Row field accessors ──────────────────────────────────────────────────
+
+    def get_row_id(self, row_index: int) -> str:
+        """Test case ID is in td[0]."""
+        return (
+            self._all_rows()
+            .nth(row_index)
+            .locator("td")
+            .nth(0)
+            .inner_text()
+            .strip()
+        )
+
+    def get_row_priority(self, row_index: int) -> str:
+        """Priority is in td[4]."""
+        return (
+            self._all_rows()
+            .nth(row_index)
+            .locator("td")
+            .nth(4)
+            .inner_text()
+            .strip()
+        )
+
+    def get_all_row_ids(self) -> list[str]:
+        return [self.get_row_id(i) for i in range(self.get_table_row_count())]
+
+    def get_all_row_priorities(self) -> list[str]:
+        return [self.get_row_priority(i) for i in range(self.get_table_row_count())]
+
+    # ── Column-header filters ────────────────────────────────────────────────
+
+    def click_type_header(self) -> None:
+        """Click the Type column header to cycle the type filter."""
+        self.page.locator("main table thead th").nth(3).click()
+        self.page.wait_for_timeout(300)
+
+    def click_priority_header(self) -> None:
+        """Click the Priority column header to cycle the priority filter."""
+        self.page.locator("main table thead th").nth(4).click()
+        self.page.wait_for_timeout(300)
+
+    def get_type_header_text(self) -> str:
+        return self.page.locator("main table thead th").nth(3).inner_text().strip()
+
+    def get_priority_header_text(self) -> str:
+        return self.page.locator("main table thead th").nth(4).inner_text().strip()
+
+    # ── Export ───────────────────────────────────────────────────────────────
+
+    def is_export_button_visible(self) -> bool:
+        return self.page.get_by_role("button", name="Export As").is_visible()
+
+    def hover_export_button(self) -> None:
+        self.page.get_by_role("button", name="Export As").hover()
+        self.page.wait_for_timeout(400)
+
+    def is_export_dropdown_visible(self) -> bool:
+        """True once the hover-reveal dropdown is in the DOM."""
+        return self.page.locator("button:has-text('Export CSV')").is_visible()
+
+    def is_export_json_option_visible(self) -> bool:
+        return self.page.locator("button:has-text('Export JSON')").is_visible()
+
+    # ── Create manual test case modal ────────────────────────────────────────
+
+    def click_create_button(self) -> None:
+        self.page.get_by_role("button", name="Create").click()
+        self.page.wait_for_timeout(300)
+
+    def is_create_modal_visible(self) -> bool:
+        return self.page.get_by_text("Create Manual Test Case").is_visible()
+
+    def is_modal_title_input_visible(self) -> bool:
+        return self.page.get_by_placeholder(
+            "e.g., Verify Login with valid credentials"
+        ).is_visible()
+
+    def is_modal_steps_label_visible(self) -> bool:
+        return self.page.get_by_text("Steps (One per line)").is_visible()
+
+    def is_modal_type_label_visible(self) -> bool:
+        """Check the 'Type' label inside the create modal."""
+        return self.page.get_by_text("Type", exact=True).first.is_visible()
+
+    def click_cancel_in_modal(self) -> None:
+        self.page.get_by_role("button", name="Cancel").click()
+        self.page.wait_for_timeout(300)
+
+    def is_create_modal_closed(self) -> bool:
+        return not self.page.get_by_text("Create Manual Test Case").is_visible()
+
+    # ── Row expansion ────────────────────────────────────────────────────────
+
+    def click_first_row(self) -> None:
+        """Click the first data row to trigger the expand toggle."""
+        self._all_rows().first.click()
+        self.page.wait_for_timeout(400)
+
+    def is_expanded_row_visible(self) -> bool:
+        """True when a row's step list has been rendered into the DOM."""
+        return self.page.locator("main table tbody td ul.list-decimal").is_visible()
+
+    # ── Empty state ──────────────────────────────────────────────────────────
+
+    def has_no_results_message(self) -> bool:
+        return self.page.get_by_text("No test cases match filters.").is_visible()
+
+    # ── Navigation helpers ───────────────────────────────────────────────────
+
+    def is_back_button_visible(self) -> bool:
+        return self.page.get_by_role("button", name="Back to Projects").is_visible()
+
+    def get_heading_text(self) -> str:
+        return self.page.locator("main h1").inner_text().strip()
