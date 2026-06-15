@@ -303,6 +303,7 @@ def check_row_count_unchanged(
 @then(parsers.parse('the text "{expected_text}" is visible'))
 def check_text_visible(page, expected_text: str) -> None:
     locator = page.get_by_text(expected_text, exact=False)
+    locator.wait_for(state="visible", timeout=10_000)
     assert locator.is_visible(), f"Expected text '{expected_text}' to be visible"
 
 

@@ -103,7 +103,22 @@ def seed_api_data(playwright, test_credentials):
     project = proj_resp.json()
     project_id = project.get("_id")
 
-    # 5. Seed exactly 3 manual test cases — titles mirror the mock so that
+    # 5. Seed 2 documents so the @management delete scenarios always have rows
+    #    to work with, independent of whether @upload tests ran first.
+    seed_pdf = FIXTURES_DIR / "sample_valid.pdf"
+    if seed_pdf.exists() and project_id:
+        pdf_bytes = seed_pdf.read_bytes()
+        for i in range(1, 3):
+            ctx.post("/api/upload", multipart={
+                "projectId": project_id,
+                "documents": {
+                    "name": f"seed_doc_{i}.pdf",
+                    "mimeType": "application/pdf",
+                    "buffer": pdf_bytes,
+                },
+            })
+
+    # 6. Seed exactly 3 manual test cases — titles mirror the mock so that
     #    AT2 (search "login" → 2 hits) and AT5/AT15 (total = 3) still pass.
     seed_cases = [
         {
