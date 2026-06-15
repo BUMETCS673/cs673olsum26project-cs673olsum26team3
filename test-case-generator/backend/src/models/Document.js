@@ -21,6 +21,15 @@ const DocumentSchema = new mongoose.Schema({
     uploadDate: {
         type: Date,
         default: Date.now
+    },
+    status: {
+        type: String,
+        enum: ['Processing', 'Ready', 'Completed'],
+        default: 'Processing'
+    },
+    progress: {
+        type: Number,
+        default: 0
     }
 });
 

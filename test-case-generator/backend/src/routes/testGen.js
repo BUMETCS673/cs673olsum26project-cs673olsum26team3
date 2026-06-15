@@ -19,6 +19,9 @@ const openai = new OpenAI({
  */
 router.post('/', authMiddleware, async (req, res) => {
     const { requirement, options, projectId } = req.body;
+    const genStart = Date.now();
+
+    console.log(`[TestGen] Starting generation for project: ${projectId}`);
 
     // CT-30: Validate that User Story content is not empty
     if (!requirement || requirement.trim() === '') {
@@ -32,139 +35,120 @@ router.post('/', authMiddleware, async (req, res) => {
 
         // 1. Attempt Vector Search (RAG)
         try {
-            const embeddingResponse = await openai.embeddings.create({
-                model: "text-embedding-3-small",
-                input: requirement
-            });
+            console.log('[TestGen] Step 1: Generating embedding for requirement...');
+            const embeddingResponse = await Promise.race([
+                openai.embeddings.create({
+                    model: "text-embedding-3-small",
+                    input: requirement
+                }),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('OpenAI_Embedding_Timeout')), 15000))
+            ]);
+            
             const queryVector = embeddingResponse.data[0].embedding;
+            console.log('[TestGen] Step 2: Executing Atlas Vector Search...');
 
-            const relevantChunks = await Chunk.aggregate([
-                {
-                    "$vectorSearch": {
-                        "index": "vector_index",
-                        "path": "embedding",
-                        "queryVector": queryVector,
-                        "numCandidates": 50,
-                        "limit": 8,
-                        "filter": { "projectId": projectId }
+            const relevantChunks = await Promise.race([
+                Chunk.aggregate([
+                    {
+                        "$vectorSearch": {
+                            "index": "vector_index",
+                            "path": "embedding",
+                            "queryVector": queryVector,
+                            "numCandidates": 50,
+                            "limit": 8,
+                            "filter": { "projectId": projectId }
+                        }
                     }
-                }
+                ]),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Atlas_VectorSearch_Timeout')), 20000))
             ]);
 
             if (relevantChunks.length > 0) {
                 groundedContext = relevantChunks.map(c => c.text).join('\n\n---\n\n');
                 contextAvailable = true;
+                console.log(`[TestGen] Vector search found ${relevantChunks.length} chunks.`);
+            } else {
+                console.log('[TestGen] Vector search returned 0 results.');
             }
         } catch (vectorError) {
-            console.warn('[Vector Search Fallback] Falling back to full document scan:', vectorError.message);
+            console.warn('[TestGen] [Vector Search Error]:', vectorError.message);
+            retrievalMethod = 'Full Document Scan';
         }
 
-        // 2. Fallback to full document text if Vector Search yielded nothing
+        // 2. Fallback to full document text if Vector Search yielded nothing or failed
         if (!contextAvailable) {
-            const projectDocs = await Document.find({ projectId });
+            console.log('[TestGen] Step 2 (Fallback): Scanning all project documents...');
+            const projectDocs = await Document.find({ projectId }).limit(5); // Limit to avoid massive prompts
             if (projectDocs.length > 0) {
                 groundedContext = projectDocs.map(doc => doc.extractedText).join('\n\n');
                 contextAvailable = true;
-                retrievalMethod = 'Full Document Scan';
+                console.log(`[TestGen] Found ${projectDocs.length} documents for context.`);
             }
         }
 
-        // Construct the AI Prompt based on selected options
+        // Construct the AI Prompt
         let typesToGenerate = [];
         if (options.positive) typesToGenerate.push('Functional/Positive Test Cases');
-        if (options.negative) typesToGenerate.push('Negative Test Cases (invalid inputs, error handling)');
-        if (options.edgeCase) typesToGenerate.push('Edge Cases (boundaries, limits, unusual conditions)');
+        if (options.negative) typesToGenerate.push('Negative Test Cases');
+        if (options.edgeCase) typesToGenerate.push('Edge Cases');
 
         const prompt = `
-            You are a Senior QA Engineer. Generate structured test cases based on the User Story and Product Context below.
-            
             User Story: "${requirement}"
-            
-            Product Context:
-            ${contextAvailable ? groundedContext : 'No specific project documentation provided.'}
-            
-            Requirements:
-            1. ONLY generate the following types of test cases: ${typesToGenerate.join(', ')}.
-            2. Do NOT generate any other types of test cases.
-            3. Format each test case as a JSON object with:
-               - id (string, e.g., TC-001)
-               - title (string)
-               - preconditions (string)
-               - steps (array of strings)
-               - expectedResults (string)
-               - type (string: "Functional", "Negative", or "Edge Case")
-               - priority (string: "High", "Medium", or "Low")
-            
-            Return ONLY a JSON object containing a "testCases" array.
+            Context: ${contextAvailable ? groundedContext : 'None'}
+            Generate JSON test cases for: ${typesToGenerate.join(', ')}.
+            Format: { "testCases": [ { "id": "AI-001", "title": "...", "preconditions": "...", "steps": [...], "expectedResults": "...", "type": "...", "priority": "..." } ] }
         `;
 
-        // CT-33: Call AI API
-        const aiResponse = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-                { role: 'system', content: 'You are an expert test case generator. Output only valid JSON.' },
-                { role: 'user', content: prompt }
-            ]
-        });
+        console.log('[TestGen] Step 3: Calling OpenAI GPT-4o...');
+        // CT-33: Call AI API with hard timeout
+        const aiResponse = await Promise.race([
+            openai.chat.completions.create({
+                model: 'gpt-4o',
+                messages: [
+                    { role: 'system', content: 'Expert QA Engineer. Output valid JSON only.' },
+                    { role: 'user', content: prompt }
+                ],
+                response_format: { type: "json_object" }
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('OpenAI_Completion_Timeout')), 45000))
+        ]);
 
+        console.log('[TestGen] Step 4: Processing AI response...');
         let rawContent = aiResponse.choices[0].message.content.trim();
-        if (rawContent.startsWith('```')) {
-            rawContent = rawContent.replace(/```json|```/g, '');
-        }
-        
         const content = JSON.parse(rawContent);
-        let aiTestCases = content.testCases || content.test_cases || (Array.isArray(content) ? content : Object.values(content)[0]);
+        let aiTestCases = content.testCases || [];
 
-        // --- ROBUST ID UNIQUE GENERATION LOGIC ---
-        // 1. Get all existing test cases for this project
-        const allStories = await UserStory.find({ projectId });
-        let maxAiNum = 0;
+        // ID Generation Logic (Keep it efficient)
+        const existingCount = await UserStory.countDocuments({ projectId });
+        const baseId = existingCount * 10; // Simple offset for uniqueness
 
-        allStories.forEach(s => {
-            (s.testCases || []).forEach(tc => {
-                if (tc.id && typeof tc.id === 'string' && tc.id.startsWith('AI-')) {
-                    const num = parseInt(tc.id.replace('AI-', ''), 10);
-                    if (!isNaN(num) && num > maxAiNum) maxAiNum = num;
-                }
-            });
-        });
-
-        // 2. Assign new IDs starting from maxAiNum + 1
         if (Array.isArray(aiTestCases)) {
             aiTestCases = aiTestCases.map((tc, index) => ({
                 ...tc,
-                id: `AI-${String(maxAiNum + index + 1).padStart(3, '0')}`
+                id: `AI-${String(baseId + index + 1).padStart(3, '0')}`
             }));
         }
 
-        // CT-66: Persist results
+        // Save Results
         const newUserStory = new UserStory({
             projectId,
             requirement,
             options,
-            testCases: aiTestCases || []
+            testCases: aiTestCases
         });
         await newUserStory.save();
 
-        let aiNotification = `AI generation completed successfully using ${retrievalMethod}.`;
-        if (!contextAvailable) {
-            aiNotification = 'Warning: No product specification context found. Generated test cases are generic.';
-        }
+        console.log(`[TestGen] Completed successfully in ${Date.now() - genStart}ms`);
 
         return res.status(200).json({
-            message: aiNotification,
-            data: {
-                status: 'Success',
-                grounded: contextAvailable,
-                retrievalMethod: retrievalMethod,
-                testCases: aiTestCases
-            }
+            message: contextAvailable ? 'Success' : 'Warning: No context found.',
+            data: { testCases: aiTestCases }
         });
 
     } catch (error) {
-        console.error('Generation Failure:', error);
+        console.error('[TestGen] [Fatal Error]:', error);
         return res.status(500).json({ 
-            message: 'AI Generation failed. Please try again.' 
+            message: `Generation failed: ${error.message}` 
         });
     }
 });

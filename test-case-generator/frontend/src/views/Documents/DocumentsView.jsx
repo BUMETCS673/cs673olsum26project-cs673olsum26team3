@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './DocumentsView.css';
-import { Sparkles, Upload, FileText, CircleCheck, Clock, Trash2, ArrowLeft, PenTool } from 'lucide-react';
+import { Sparkles, Upload, FileText, CircleCheck, Trash2, ArrowLeft, PenTool, Loader2 } from 'lucide-react';
+import { authFetch } from '../../utils/api';
 
 /**
  * DocumentsView Component
@@ -10,24 +11,63 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
   const [documents, setDocuments] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [notification, setNotification] = useState(null);
+  const notificationTimeout = React.useRef(null);
 
-  // Fetch documents on mount
+  // Helper to show notifications - Fixed to clear previous timeouts
+  const showNotification = (message, type = 'success') => {
+    if (notificationTimeout.current) {
+      clearTimeout(notificationTimeout.current);
+    }
+    setNotification({ message, type });
+    notificationTimeout.current = setTimeout(() => {
+      setNotification(null);
+      notificationTimeout.current = null;
+    }, type === 'info' ? 10000 : 5000); // Give info messages more time
+  };
+
+  // Fetch documents on mount and setup polling for processing status
   React.useEffect(() => {
     if (projectId) {
       setDocuments([]); // CT-66: Clear previous list to prevent project leakage
       fetchDocuments();
     }
+    
+    // Cleanup on unmount
+    return () => {
+      if (notificationTimeout.current) clearTimeout(notificationTimeout.current);
+    };
   }, [projectId]);
+
+  // CT-Polling: Refresh list if any document is still "Processing"
+  React.useEffect(() => {
+    let pollInterval;
+    
+    // Polling logic: check if any document is in 'Processing' state
+    const hasProcessing = documents.some(doc => doc.status === 'Processing');
+    
+    if (hasProcessing && !isUploading) {
+      pollInterval = setInterval(() => {
+        console.log('Polling for document status updates...');
+        fetchDocuments();
+      }, 3000);
+    }
+
+    return () => {
+      if (pollInterval) clearInterval(pollInterval);
+    };
+  }, [documents, isUploading]);
 
   const fetchDocuments = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/upload/${projectId}`);
+      const res = await authFetch(`http://localhost:5001/api/upload/${projectId}`);
       const data = await res.json();
       if (res.ok) {
         setDocuments(data);
       }
     } catch (err) {
       console.error('Error fetching documents:', err);
+      showNotification('Failed to load documents.', 'error');
     }
   };
 
@@ -36,44 +76,59 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
 
     // CT-75: Pre-validation for size and type
     const MAX_SIZE = 20 * 1024 * 1024; // 20MB
-    const ALLOWED_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
     
     for (const file of files) {
       if (file.size > MAX_SIZE) {
-        alert(`File "${file.name}" is too large. Maximum size is 20MB.`);
+        showNotification(`File "${file.name}" is too large. Maximum size is 20MB.`, 'error');
         return;
       }
-      // Note: type might be empty for some files, checking extension as fallback
+      
       const ext = file.name.split('.').pop().toLowerCase();
       const isImage = ['png', 'jpg', 'jpeg'].includes(ext);
       const isPdf = ext === 'pdf';
       
       if (!isPdf && !isImage) {
-        alert(`File "${file.name}" has an unsupported format. Please upload PDF or Images.`);
+        showNotification(`File "${file.name}" has an unsupported format. Please upload PDF or Images.`, 'error');
         return;
       }
     }
 
     setIsUploading(true);
+    showNotification('Analyzing and preparing documents...', 'info');
+    
     const formData = new FormData();
     formData.append('projectId', projectId);
     files.forEach(file => formData.append('documents', file));
 
     try {
-      const res = await fetch('http://localhost:5001/api/upload', {
+      const res = await authFetch('http://localhost:5001/api/upload', {
         method: 'POST',
         body: formData
       });
+      
       const result = await res.json();
+      
       if (res.ok) {
-        alert(result.message);
-        fetchDocuments(); // Refresh list
+        console.log('Upload success, updating document list...');
+        showNotification('Upload successful!', 'success');
+        
+        // Ensure synchronized update
+        if (result.data && Array.isArray(result.data)) {
+          // Add new documents and filter out any duplicates by ID
+          setDocuments(prev => {
+            const newIds = new Set(result.data.map(d => d.id));
+            const filteredPrev = prev.filter(p => !newIds.has(p.id));
+            return [...result.data, ...filteredPrev];
+          });
+        } else {
+          await fetchDocuments();
+        }
       } else {
-        alert(result.error);
+        showNotification(result.error || 'Upload failed', 'error');
       }
     } catch (err) {
       console.error('Error uploading:', err);
-      alert('Upload failed');
+      showNotification('Upload failed. Please check your connection.', 'error');
     } finally {
       setIsUploading(false);
     }
@@ -109,19 +164,47 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
 
   const handleDeleteDoc = async (docId) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/upload/${docId}`, {
+      const res = await authFetch(`http://localhost:5001/api/upload/${docId}`, {
         method: 'DELETE'
       });
       if (res.ok) {
         setDocuments(documents.filter(doc => doc.id !== docId));
+        showNotification('Document deleted.');
       }
     } catch (err) {
       console.error('Error deleting document:', err);
+      showNotification('Failed to delete document.', 'error');
     }
   };
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Notification Toast with unique key to re-trigger animation */}
+      {notification && (
+        <div 
+          key={notification.message + notification.type}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            color: 'white',
+            zIndex: 1000,
+            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05)',
+            backgroundColor: notification.type === 'error' ? '#ef4444' : (notification.type === 'info' ? '#3b82f6' : '#10b981'),
+            transition: 'all 0.3s ease',
+            animation: 'slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {notification.type === 'success' && <CircleCheck size={18} />}
+            {notification.type === 'info' && <Loader2 size={18} className="animate-spin" />}
+            <span style={{ fontWeight: '500' }}>{notification.message}</span>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-7xl px-6 py-8">
         
         {/* Navigation fallback action line to return to main dashboard */}
@@ -206,7 +289,7 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
           <h3 className={`mb-2 font-medium transition-colors ${isDragging ? 'text-blue-700' : 'text-gray-900'}`}>
             {isUploading ? 'Uploading and processing...' : isDragging ? 'Drop files here' : 'Drop PDF files here or click to browse'}
           </h3>
-          <p className="mb-4 text-sm text-gray-600">Supports PDF documents up to 20MB</p>
+          <p className="mb-4 text-sm text-gray-600">Supports PDF, PNG, JPG up to 20MB</p>
           <label 
             className={`inline-block cursor-pointer rounded-lg border border-gray-300 bg-white px-6 py-2 text-sm text-gray-700 transition-all ${isUploading ? 'opacity-50 cursor-not-allowed' : ''}`}
             style={{ transition: 'all 0.2s ease' }}
@@ -273,15 +356,17 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
                   {/* Pipeline Processing Status Indicator Badges */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                      {doc.status === 'Ready' ? (
+                      {(doc.status === 'Ready' || doc.status === 'Completed') ? (
                         <>
                           <CircleCheck className="text-green-600" size={20} />
-                          <span className="text-sm text-gray-900">Ready</span>
+                          <span className="text-sm font-medium text-green-700">Completed</span>
                         </>
                       ) : (
                         <>
-                          <Clock className="text-yellow-600" size={20} />
-                          <span className="text-sm text-gray-900">Processing</span>
+                          <Loader2 className="text-blue-600 animate-spin" size={20} />
+                          <span className="text-sm font-medium text-blue-700">
+                            Processing ({doc.progress ?? 0}%)
+                          </span>
                         </>
                       )}
                     </div>
@@ -317,6 +402,13 @@ export default function DocumentsView({ projectId, projectName, onBack, onNaviga
         </div>
 
       </main>
+      
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

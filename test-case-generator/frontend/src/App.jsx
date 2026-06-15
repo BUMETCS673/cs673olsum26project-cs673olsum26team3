@@ -6,6 +6,7 @@ import TestCasesView from './views/TestCases/TestCasesView';
 import TestCaseManagementView from './views/TestCaseManagement/TestCaseManagementView';
 import Login from './views/Login/Login';
 import UserStoryInputView from './views/UserStoryInput/UserStoryInputView';
+import { authFetch } from './utils/api';
 
 /**
  * Main App Controller
@@ -27,26 +28,15 @@ export default function App() {
   // State to hold dynamically generated test cases from the input form
   const [generatedPayload, setGeneratedPayload] = useState(null);
 
-  // Helper for authorized fetch requests
-  const authFetch = async (url, options = {}) => {
-    const token = localStorage.getItem('token');
-    const headers = {
-      ...options.headers,
-      'Authorization': `Bearer ${token}`
-    };
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
 
-    try {
-      const res = await fetch(url, { ...options, headers });
-      if (res.status === 401) {
-        // Token expired or invalid
-        handleLogout();
-        throw new Error('Session expired. Please login again.');
-      }
-      return res;
-    } catch (err) {
-      console.error('API request error:', err);
-      throw err;
-    }
+  // Helper for authorized fetch requests wrapping the shared utility
+  const authorizedRequest = async (url, options = {}) => {
+    return authFetch(url, options, handleLogout);
   };
 
   // Fetch projects from the real backend API
@@ -58,7 +48,7 @@ export default function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await authFetch(`http://localhost:5001/api/projects?userId=${user.id}`);
+      const res = await authorizedRequest(`http://localhost:5001/api/projects?userId=${user.id}`);
       const data = await res.json();
       if (res.ok) setProjects(data);
     } catch (err) {
@@ -69,7 +59,7 @@ export default function App() {
   // Handler for creating a new project via API
   const handleCreateProject = async (projectData) => {
     try {
-      const res = await authFetch('http://localhost:5001/api/projects', {
+      const res = await authorizedRequest('http://localhost:5001/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...projectData, userId: user.id })
@@ -88,7 +78,7 @@ export default function App() {
   // Handler for deleting a project via API
   const handleDeleteProject = async (id) => {
     try {
-      const res = await authFetch(`http://localhost:5001/api/projects/${id}`, {
+      const res = await authorizedRequest(`http://localhost:5001/api/projects/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -97,12 +87,6 @@ export default function App() {
     } catch (err) {
       console.error('Error deleting project:', err);
     }
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
   };
 
   // Handler for navigation between different project views

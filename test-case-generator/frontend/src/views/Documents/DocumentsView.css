@@ -25,7 +25,24 @@
 
 /* Text Color Accents */
 .text-green-600 { color: #16a34a; }
+.text-green-700 { color: #15803d; }
 .text-yellow-600 { color: #ca8a04; }
+.text-blue-600 { color: #2563eb; }
+.text-blue-700 { color: #1d4ed8; }
+
+/* Animations */
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Custom utility component rules */
 .cursor-pointer { cursor: pointer; }

@@ -35,8 +35,9 @@ app.use(helmet());
 // 2. Rate Limiting (Prevent Brute Force)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 20, // limit each IP to 20 login/register requests per window
-    message: { success: false, message: 'Too many login attempts. Please try again after 15 minutes.' }
+    max: 5, // limit each IP to 5 failed attempts per window
+    skipSuccessfulRequests: true, // do not count successful requests
+    message: { success: false, message: 'Too many failed login attempts. Please try again after 15 minutes.' }
 });
 
 // Enable Cross-Origin Resource Sharing with restricted origin
