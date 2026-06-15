@@ -3,8 +3,7 @@ import {
   ArrowLeft, Search, Download, Pencil, Archive, ArchiveRestore,
   Trash2, X, FileSpreadsheet, Code,
 } from 'lucide-react';
-
-const BASE = 'http://localhost:5001';
+import { API_URL as BASE } from '../../config';
 
 const LABEL_STYLE = {
   display: 'block', fontSize: '13px', fontWeight: '500',
