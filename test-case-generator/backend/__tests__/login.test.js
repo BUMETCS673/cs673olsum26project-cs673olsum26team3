@@ -145,3 +145,14 @@ describe('POST /api/change-password', () => {
     expect(res.body.success).toBe(false);
   });
 });
+
+// ──────────────────────────── POST /api/logout ───────────────────────────────
+
+describe('POST /api/logout', () => {
+  test('returns 200 on successful logout', async () => {
+    const res = await request(app).post('/api/logout').send();
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toMatch(/logged out/i);
+  });
+});

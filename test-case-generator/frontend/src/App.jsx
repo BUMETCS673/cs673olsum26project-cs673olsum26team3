@@ -6,13 +6,18 @@ import TestCasesView from './views/TestCases/TestCasesView';
 import TestCaseManagementView from './views/TestCaseManagement/TestCaseManagementView';
 import Login from './views/Login/Login';
 import UserStoryInputView from './views/UserStoryInput/UserStoryInputView';
+import { authFetch } from './utils/api';
 
 /**
  * Main App Controller
  * Manages global state, routing between views, and project data flows.
  */
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    // Check for existing session in localStorage
+    const savedUser = localStorage.getItem('user');
+    return savedUser ? JSON.parse(savedUser) : null;
+  });
   const [currentView, setCurrentView] = useState('projects');
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   // Start with empty lists for real data persistence
@@ -23,6 +28,23 @@ export default function App() {
   // State to hold dynamically generated test cases from the input form
   const [generatedPayload, setGeneratedPayload] = useState(null);
 
+  const handleLogout = async () => {
+    try {
+      // Optional: Notify backend of logout
+      await fetch('http://localhost:5001/api/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Error during backend logout:', err);
+    }
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+  };
+
+  // Helper for authorized fetch requests wrapping the shared utility
+  const authorizedRequest = async (url, options = {}) => {
+    return authFetch(url, options, handleLogout);
+  };
+
   // Fetch projects from the real backend API
   useEffect(() => {
     if (user) {
@@ -32,7 +54,7 @@ export default function App() {
 
   const fetchProjects = async () => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects?userId=${user.id}`);
+      const res = await authorizedRequest(`http://localhost:5001/api/projects?userId=${user.id}`);
       const data = await res.json();
       if (res.ok) setProjects(data);
     } catch (err) {
@@ -43,7 +65,7 @@ export default function App() {
   // Handler for creating a new project via API
   const handleCreateProject = async (projectData) => {
     try {
-      const res = await fetch('http://localhost:5001/api/projects', {
+      const res = await authorizedRequest('http://localhost:5001/api/projects', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...projectData, userId: user.id })
@@ -62,7 +84,7 @@ export default function App() {
   // Handler for deleting a project via API
   const handleDeleteProject = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5001/api/projects/${id}`, {
+      const res = await authorizedRequest(`http://localhost:5001/api/projects/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {
@@ -98,7 +120,7 @@ export default function App() {
       {/* Global Navbar with unified logout functionality */}
       <Navbar
         user={user}
-        onLogout={() => setUser(null)}
+        onLogout={handleLogout}
         onLogoClick={() => setCurrentView('projects')}
         onNavigateToManage={() => setCurrentView('manage-tests')}
       />
