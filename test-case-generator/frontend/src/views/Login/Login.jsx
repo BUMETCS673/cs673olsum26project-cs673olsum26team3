@@ -1,23 +1,19 @@
 import { useState } from 'react';
+import { useSession } from "../../context/SessionManager";
 import './Login.css';
 
-/**
- * Login Component
- * Handles user authentication, new user registration, and password updates.
- */
 export default function Login({ onLogin }) {
-  // Mode toggle states: 'login', 'register', 'forgot'
+  const { login } = useSession();
+
   const [mode, setMode] = useState('login');
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  /**
-   * Resets form state when switching modes.
-   */
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
@@ -26,17 +22,14 @@ export default function Login({ onLogin }) {
     setConfirmPassword('');
   };
 
-  /**
-   * Handles form submission based on the current mode.
-   */
   async function handleSubmit(e) {
     e.preventDefault();
+
     setError('');
     setSuccessMsg('');
 
-    // Validation for registration and password change
-    if ((mode === 'register' || mode === 'forgot') && password !== confirmPassword) {
-      setError('Passwords do not match. Please re-type them.');
+    if (mode === 'register' && password !== confirmPassword) {
+      setError('Passwords do not match.');
       return;
     }
 
@@ -45,9 +38,6 @@ export default function Login({ onLogin }) {
 
     if (mode === 'register') {
       endpoint = '/api/register';
-    } else if (mode === 'forgot') {
-      endpoint = '/api/change-password';
-      bodyPayload = { username, newPassword: password };
     }
 
     try {
@@ -59,32 +49,48 @@ export default function Login({ onLogin }) {
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        setError(data.message || 'Something went wrong. Please try again.');
+      if (!res.ok) {
+        setError(data.message || 'Request failed.');
         return;
       }
 
-      if (mode === 'register' || mode === 'forgot') {
-        // Notify user and switch back to login mode
-        setSuccessMsg(data.message || 'Operation successful! You can now login.');
+      // REGISTER
+      if (mode === 'register') {
+        setSuccessMsg(data.message || 'Account created!');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
-      } else {
-        // Successful login
-        setUsername('');
-        setPassword('');
-        onLogin(data.user);
+        return;
       }
+
+      // LOGIN SUCCESS
+      if (!data.user || !data.token) {
+        setError('Invalid server response (missing user/token).');
+        return;
+      }
+
+      const normalizedUser = {
+        ...data.user,
+        id: data.user._id || data.user.id,
+      };
+
+      login(normalizedUser, data.token);
+
+      setUsername('');
+      setPassword('');
+      setConfirmPassword('');
+
+      if (onLogin) {
+        onLogin(normalizedUser);
+      }
+
     } catch (err) {
-      setError('Could not connect to the server. Please check your connection.');
+      setError('Server not reachable. Check backend.');
     }
   }
 
-  // Determine header text based on mode
   const getHeader = () => {
     if (mode === 'register') return 'Create Account';
-    if (mode === 'forgot') return 'Update Password';
     return 'Login';
   };
 
@@ -94,85 +100,63 @@ export default function Login({ onLogin }) {
         <h1>{getHeader()}</h1>
 
         {error && <div className="error">{error}</div>}
-        {successMsg && <div className="success" style={{ color: '#10b981', marginBottom: '1rem', fontSize: '14px', textAlign: 'center', fontWeight: '500' }}>{successMsg}</div>}
+        {successMsg && <div className="success">{successMsg}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-control-group">
             <label>Username</label>
             <input
-              type="text"
               value={username}
-              onChange={e => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username"
               required
-              autoComplete="username"
-              placeholder="Enter your username"
             />
           </div>
 
           <div className="form-control-group">
-            <label>{mode === 'forgot' ? 'New Password' : 'Password'}</label>
+            <label>Password</label>
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
+              required
             />
           </div>
 
-          {(mode === 'register' || mode === 'forgot') && (
+          {mode === 'register' && (
             <div className="form-control-group">
-              <label>Confirm {mode === 'forgot' ? 'New ' : ''}Password</label>
+              <label>Confirm Password</label>
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm password"
                 required
-                autoComplete="new-password"
-                placeholder="Re-type password"
               />
             </div>
           )}
 
-          <button
-            type="submit"
-            style={{ transition: 'all 0.2s ease' }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#374151';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#000000';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
-            {mode === 'register' ? 'Register' : mode === 'forgot' ? 'Update' : 'Sign in'}
+          <button type="submit">
+            {mode === 'register' ? 'Register' : 'Sign in'}
           </button>
         </form>
 
-        <div className="toggle-mode" style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '13px' }}>
+        <div className="toggle-mode">
           {mode === 'login' && (
-            <>
-              <p>
-                Don't have an account?{' '}
-                <span onClick={() => switchMode('register')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
-                  Register here
-                </span>
-              </p>
-              <p style={{ marginTop: '8px' }}>
-                <span onClick={() => switchMode('forgot')} style={{ color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
-                  Forgot password?
-                </span>
-              </p>
-            </>
+            <p>
+              No account?{' '}              
+              <span className="register-link" onClick={() => switchMode('register')}>
+                Register
+              </span>
+            </p>
           )}
 
-          {(mode === 'register' || mode === 'forgot') && (
+          {mode === 'register' && (
             <p>
-              Already have an account?{' '}
-              <span onClick={() => switchMode('login')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
-                Login here
+               Already have an account?{' '}   
+              <span className="register-link" onClick={() => switchMode('login')}>
+                Back to login
               </span>
             </p>
           )}

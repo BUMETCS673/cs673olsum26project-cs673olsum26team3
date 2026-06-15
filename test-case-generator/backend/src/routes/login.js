@@ -1,28 +1,43 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+
+const SALT_ROUNDS = 10;
 
 /**
  * POST /api/login
- * Authenticates user credentials against the MongoDB database.
+ * Authenticates user credentials and returns a JWT token.
  */
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate the presence of compulsory fields
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
   try {
-    // Lookup matching profile credentials in MongoDB
-    const user = await User.findOne({ username, password });
+    // Find user by username only
+    const user = await User.findOne({ username });
     if (!user) {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
     }
 
-    // Return success and user info
-    return res.json({ success: true, user: { id: user._id, username: user.username } });
+    // Compare provided password against stored hash
+    const passwordMatch = await bcrypt.compare(password, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect username or password' });
+    }
+
+    // Issue JWT token (expires in 2 hours)
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      process.env.JWT_SECRET,
+      { expiresIn: '2h' }
+    );
+
+    return res.json({ success: true, token, user: { id: user._id, username: user.username } });
   } catch (error) {
     console.error('Login error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred on the server. Please try again.' });
@@ -31,28 +46,39 @@ router.post('/login', async (req, res) => {
 
 /**
  * POST /api/register
- * Creates a new user record in the MongoDB database.
+ * Creates a new user record with a hashed password.
  */
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate inputs
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+    });
+  }
+
   try {
-    // Check if user already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(409).json({ success: false, message: 'This username is already taken' });
     }
 
-    // Create and save new user
-    const newUser = new User({ username, password });
+    // Hash password before storing
+    const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+    const newUser = new User({ username, password: hashedPassword });
     await newUser.save();
 
-    return res.status(201).json({ success: true, user: { id: newUser._id, username: newUser.username }, message: 'Account created successfully!' });
+    return res.status(201).json({
+      success: true,
+      user: { id: newUser._id, username: newUser.username },
+      message: 'Account created successfully!'
+    });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred during registration. Please try again.' });
@@ -61,13 +87,13 @@ router.post('/register', async (req, res) => {
 
 /**
  * POST /api/change-password
- * Updates the password for an existing user.
+ * Updates password after verifying the current password.
  */
 router.post('/change-password', async (req, res) => {
-  const { username, newPassword } = req.body;
+  const { username, currentPassword, newPassword } = req.body;
 
-  if (!username || !newPassword) {
-    return res.status(400).json({ success: false, message: 'Please enter both username and new password' });
+  if (!username || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Please enter your username, current password, and new password' });
   }
 
   try {
@@ -76,8 +102,14 @@ router.post('/change-password', async (req, res) => {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Update password
-    user.password = newPassword;
+    // Verify current password before allowing change
+    const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+    }
+
+    // Hash and save the new password
+    user.password = await bcrypt.hash(newPassword, SALT_ROUNDS);
     await user.save();
 
     return res.json({ success: true, message: 'Password updated successfully!' });
