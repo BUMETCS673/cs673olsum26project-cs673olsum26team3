@@ -276,7 +276,7 @@ def mock_upload_api(page, test_credentials):
                     try {{ body = JSON.parse(options.body); }} catch(e) {{}}
                     if (body.username === TEST_USERNAME && body.password === TEST_PASSWORD) {{
                         return new Response(
-                            JSON.stringify({{ success: true, user: {{ id: 'u1', username: TEST_USERNAME }} }}),
+                            JSON.stringify({{ success: true, token: 'mock-jwt-token', user: {{ id: 'u1', username: TEST_USERNAME }} }}),
                             {{ status: 200, headers: {{ 'Content-Type': 'application/json' }} }}
                         );
                     }}
