@@ -95,6 +95,14 @@ router.post('/change-password', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter both username and new password' });
   }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+    });
+  }
+
   try {
     const user = await User.findOne({ username });
     if (!user) {
@@ -102,7 +110,7 @@ router.post('/change-password', async (req, res) => {
     }
 
     user.password = newPassword;
-    await user.save();
+    await user.save({ validateModifiedOnly: true });
 
     return res.json({ success: true, message: 'Password updated successfully!' });
   } catch (error) {
