@@ -20,9 +20,10 @@ jobs:
 
       - name: Create backend .env
         run: |
-          printf 'PORT=5001\nMONGODB_URI=%s\nOPENAI_API_KEY=%s\n' \
+          printf 'PORT=5001\nMONGODB_URI=%s\nOPENAI_API_KEY=%s\nJWT_SECRET=%s\n' \
             "${{ secrets.MONGODB_URI }}" \
             "${{ secrets.OPENAI_API_KEY }}" \
+            "${{ secrets.JWT_SECRET }}" \
             > test-case-generator/backend/.env
 
       - name: Create tests .env

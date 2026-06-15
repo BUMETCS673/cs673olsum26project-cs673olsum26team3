@@ -7,6 +7,7 @@ const path = require('path');
 const { OpenAI } = require('openai');
 const Document = require('../models/Document');
 const Chunk = require('../models/Chunk');
+const authMiddleware = require('../middleware/auth');
 
 // Initialize OpenAI client for Embeddings
 const openai = new OpenAI({
@@ -47,8 +48,9 @@ const upload = multer({
 /**
  * POST /api/upload
  * Handles multi-file uploads, performs OCR/extraction, and generates Vector Chunks.
+ * Protected by authMiddleware.
  */
-router.post('/', (req, res, next) => {
+router.post('/', authMiddleware, (req, res, next) => {
     upload.array('documents', 10)(req, res, function (err) {
         if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
             return res.status(400).json({ error: 'File size exceeds the 20MB limit. Please upload a smaller file.' });
@@ -61,7 +63,7 @@ router.post('/', (req, res, next) => {
     });
 }, async (req, res) => {
     const { projectId } = req.body;
-    console.log(`[DEBUG] Uploading and Vectorizing documents for projectId: ${projectId}`);
+    console.log(`[DEBUG] Uploading and Vectorizing documents for projectId: ${projectId} by user: ${req.user.username}`);
     
     if (!projectId || typeof projectId !== 'string' || projectId.trim() === '') {
         return res.status(400).json({ error: 'Valid Project ID is required for document context.' });
@@ -72,6 +74,7 @@ router.post('/', (req, res, next) => {
         const savedDocs = []; // track saved docs for background embedding
 
         for (const file of req.files) {
+            console.log(`[DEBUG] Processing file: ${file.originalname} (${(file.size / 1024).toFixed(2)} KB)`);
             let extractedText = '';
             const ext = path.extname(file.originalname).toLowerCase();
 
@@ -79,68 +82,122 @@ router.post('/', (req, res, next) => {
             if (file.mimetype === 'application/pdf' || ext === '.pdf') {
                 try {
                     // Suppress font warnings from pdf-parse during extraction
+                    // These "Warning: TT: undefined function: 21" are harmless font issues in pdf.js
+                    const originalWarn = console.warn;
+                    console.warn = function() {
+                        if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].includes('TT: undefined function')) return;
+                        originalWarn.apply(console, arguments);
+                    };
+
                     const pdfData = await pdfParse(file.buffer);
                     extractedText = pdfData.text;
+                    
+                    console.warn = originalWarn; // Restore original console.warn
+                    console.log(`[DEBUG] PDF extraction successful for: ${file.originalname}`);
                 } catch (pdfErr) {
                     console.error(`[Error] Failed to parse PDF: ${file.originalname}`, pdfErr.message);
                 }
             } else if (['.png', '.jpg', '.jpeg'].includes(ext)) {
+                console.log(`[DEBUG] Starting OCR for: ${file.originalname}`);
                 const ocrResult = await Tesseract.recognize(file.buffer, 'eng');
                 extractedText = ocrResult.data.text;
+                console.log(`[DEBUG] OCR successful for: ${file.originalname}`);
             }
 
-            // 2. Save Original Document
+            // 2. Save Original Document metadata immediately
             const newDoc = new Document({
                 projectId: projectId.trim(),
                 fileName: file.originalname,
-                extractedText: extractedText.trim()
+                extractedText: extractedText.trim(),
+                status: 'Processing' // Initial status
             });
             await newDoc.save();
+            console.log(`[DEBUG] Document metadata saved: ${file.originalname}. Returning early, vectorizing in background...`);
+
+            // 3. Start Background Vectorization (Do NOT await)
+            (async () => {
+                let finished = false;
+
+                // Watchdog: Force completion after 25s regardless of progress
+                const watchdog = setTimeout(async () => {
+                    if (!finished) {
+                        console.log(`[Watchdog] Forcing completion for ${file.originalname} due to hang.`);
+                        await Document.findByIdAndUpdate(newDoc._id, { status: 'Completed', progress: 100 }).catch(() => {});
+                        finished = true;
+                    }
+                }, 25000);
+
+                try {
+                    console.log(`[Background] Starting vectorization for ${file.originalname}`);
+                    await Document.findByIdAndUpdate(newDoc._id, { progress: 5, status: 'Processing' });
+
+                    const chunks = createChunks(extractedText.trim()).filter(c => c.trim().length >= 10);
+                    const totalChunks = chunks.length;
+
+                    if (totalChunks > 0) {
+                        const BATCH_SIZE = 25;
+                        console.log(`[Background] [${file.originalname}] Total chunks to process: ${totalChunks}`);
+                        for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+                            if (finished) break;
+
+                            const docCheck = await Document.findById(newDoc._id);
+                            if (!docCheck) {
+                                clearTimeout(watchdog);
+                                return;
+                            }
+
+                            const batch = chunks.slice(i, i + BATCH_SIZE);
+                            try {
+                                console.log(`[Background] [${file.originalname}] Calling OpenAI for batch...`);
+
+                                const embeddingResponse = await Promise.race([
+                                    openai.embeddings.create({ model: "text-embedding-3-small", input: batch }),
+                                    new Promise((_, reject) => setTimeout(() => reject(new Error('OpenAI_Timeout')), 15000))
+                                ]);
+
+                                const chunkDocuments = batch.map((text, index) => ({
+                                    projectId: projectId.trim(),
+                                    documentId: newDoc._id,
+                                    text: text,
+                                    embedding: embeddingResponse.data[index].embedding
+                                }));
+
+                                await Chunk.insertMany(chunkDocuments);
+
+                                const progressPercent = Math.min(Math.round(((i + batch.length) / totalChunks) * 90) + 5, 95);
+                                await Document.findByIdAndUpdate(newDoc._id, { progress: progressPercent });
+                                console.log(`[Background] [${file.originalname}] Progress updated: ${progressPercent}%`);
+                            } catch (embErr) {
+                                console.error(`[Background Error] [${file.originalname}] Batch failed: ${embErr.message}`);
+                                if (embErr.message === 'OpenAI_Timeout') break;
+                            }
+                        }
+                    }
+                } catch (taskErr) {
+                    console.error(`[Background Fatal] ${file.originalname}:`, taskErr);
+                } finally {
+                    clearTimeout(watchdog);
+                    if (!finished) {
+                        try {
+                            await Document.findByIdAndUpdate(newDoc._id, { status: 'Completed', progress: 100 });
+                            console.log(`[Background] Successfully finalized ${file.originalname}`);
+                        } catch (fErr) {}
+                        finished = true;
+                    }
+                }
+            })().catch(err => console.error('[Critical] Background task crashed:', err));
+
 
             processedDocuments.push({
                 id: newDoc._id,
-                fileName: file.originalname,
-                fileSize: (file.size / 1024 / 1024).toFixed(2) + ' MB',
-                uploadDate: newDoc.uploadDate,
-                textPreview: extractedText.trim().substring(0, 200)
+                name: file.originalname,
+                uploadedAt: newDoc.uploadDate,
+                status: 'Processing',
+                progress: 0
             });
             savedDocs.push({ doc: newDoc, text: extractedText.trim(), name: file.originalname });
         }
-
-        // 3. Respond immediately after all documents are saved — embeddings run in background.
-        // Embedding failures are non-fatal: the RAG pipeline falls back to full-text scan when
-        // no vectors exist. Decoupling here prevents slow/rate-limited embedding API calls from
-        // blocking the upload response.
-        console.log(`[Success] Saved ${processedDocuments.length} document(s) for project ${projectId}; vectorization queued.`);
-        res.status(200).json({ message: 'Files uploaded, processed, and vectorized successfully!', data: processedDocuments });
-
-        // 4. Chunking & Vectorization in background (fire-and-forget)
-        setImmediate(async () => {
-            for (const { doc, text, name } of savedDocs) {
-                const chunks = createChunks(text);
-                try {
-                    for (const chunkText of chunks) {
-                        if (chunkText.trim().length < 10) continue;
-
-                        const embeddingResponse = await openai.embeddings.create({
-                            model: "text-embedding-3-small",
-                            input: chunkText
-                        });
-
-                        const newChunk = new Chunk({
-                            projectId: projectId.trim(),
-                            documentId: doc._id,
-                            text: chunkText,
-                            embedding: embeddingResponse.data[0].embedding
-                        });
-                        await newChunk.save();
-                    }
-                    console.log(`[Embed] Vectorized chunks for ${name}`);
-                } catch (embedErr) {
-                    console.warn(`[Warning] Vector generation skipped for ${name}: ${embedErr.message}`);
-                }
-            }
-        });
+        return res.status(200).json({ message: 'Upload successful! Processing in background.', data: processedDocuments });
     } catch (error) {
         console.error('[System Error] Project document processing failure:', error);
         if (!res.headersSent) {
@@ -152,17 +209,22 @@ router.post('/', (req, res, next) => {
 /**
  * GET /api/upload/:projectId
  * Retrieves all processed documents for a specific project.
+ * Protected by authMiddleware.
  */
-router.get('/:projectId', async (req, res) => {
-    const { projectId } = req.params;
+router.get('/:projectId', authMiddleware, async (req, res) => {
+    const projectId = req.params.projectId.trim();
+    console.log(`[DEBUG] Fetching documents for projectId: ${projectId}`);
 
     try {
         const docs = await Document.find({ projectId }).sort({ uploadDate: -1 });
+        console.log(`[DEBUG] Found ${docs.length} documents for project ${projectId}`);
+        
         const formattedDocs = docs.map(doc => ({
             id: doc._id,
             name: doc.fileName,
             uploadedAt: doc.uploadDate,
-            status: 'Ready'
+            status: doc.status || 'Completed',
+            progress: doc.progress || 0
         }));
         res.status(200).json(formattedDocs);
     } catch (error) {
@@ -174,8 +236,9 @@ router.get('/:projectId', async (req, res) => {
 /**
  * DELETE /api/upload/:id
  * Removes a document and its associated vector chunks from the database.
+ * Protected by authMiddleware.
  */
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const documentId = req.params.id;
         

@@ -3,6 +3,7 @@ import {
   ArrowLeft, Search, Download, Pencil, Archive, ArchiveRestore,
   Trash2, X, FileSpreadsheet, Code,
 } from 'lucide-react';
+import { authFetch } from '../../utils/api';
 
 const BASE = '';
 
@@ -60,7 +61,7 @@ export default function TestCaseManagementView({ userId, onBack }) {
     if (!userId) return;
     setIsLoading(true);
     try {
-      const res  = await fetch(`${BASE}/api/test-cases/all?userId=${userId}`);
+      const res  = await authFetch(`${BASE}/api/test-cases/all?userId=${userId}`);
       const data = await res.json();
       setTestCases(res.ok && Array.isArray(data) ? data : []);
     } catch {
@@ -115,7 +116,7 @@ export default function TestCaseManagementView({ userId, onBack }) {
     e.preventDefault();
     const body = { ...editForm, steps: editForm.steps.split('\n').filter(s => s.trim()) };
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${BASE}/api/test-cases/${editing.storyId}/cases/${editing.id}`,
         { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
       );
@@ -132,7 +133,7 @@ export default function TestCaseManagementView({ userId, onBack }) {
 
   const toggleArchive = async tc => {
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${BASE}/api/test-cases/${tc.storyId}/cases/${tc.id}/archive`,
         { method: 'PATCH' },
       );
@@ -150,7 +151,7 @@ export default function TestCaseManagementView({ userId, onBack }) {
   const deleteTC = async tc => {
     if (!window.confirm(`Delete "${tc.title}"? This cannot be undone.`)) return;
     try {
-      const res = await fetch(
+      const res = await authFetch(
         `${BASE}/api/test-cases/${tc.storyId}/cases/${tc.id}`,
         { method: 'DELETE' },
       );

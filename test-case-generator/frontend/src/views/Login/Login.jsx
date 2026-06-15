@@ -84,6 +84,11 @@ export default function Login({ onLogin }) {
         // Successful login
         setUsername('');
         setPassword('');
+
+        // Store JWT token and user info securely in local storage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         onLogin(data.user);
       }
     } catch (err) {
