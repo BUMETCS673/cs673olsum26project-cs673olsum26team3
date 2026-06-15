@@ -41,8 +41,13 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
-  if (password.length < 8) {
-    return res.status(400).json({ success: false, message: 'Password must be at least 8 characters' });
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+    });
   }
 
   try {
