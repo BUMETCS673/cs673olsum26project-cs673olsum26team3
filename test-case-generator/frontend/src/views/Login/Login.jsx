@@ -28,8 +28,8 @@ export default function Login({ onLogin }) {
     setError('');
     setSuccessMsg('');
 
-    if (mode === 'register' && password !== confirmPassword) {
-      setError('Passwords do not match.');
+    if ((mode === 'register' || mode === 'forgot') && password !== confirmPassword) {
+      setError('Passwords do not match. Please re-type them.');
       return;
     }
 
@@ -48,6 +48,9 @@ export default function Login({ onLogin }) {
 
     if (mode === 'register') {
       endpoint = '/api/register';
+    } else if (mode === 'forgot') {
+      endpoint = '/api/change-password';
+      bodyPayload = { username, newPassword: password };
     }
 
     try {
@@ -60,13 +63,12 @@ export default function Login({ onLogin }) {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || 'Request failed.');
+        setError(data.message || 'Something went wrong. Please try again.');
         return;
       }
 
-      // REGISTER
-      if (mode === 'register') {
-        setSuccessMsg(data.message || 'Account created!');
+      if (mode === 'register' || mode === 'forgot') {
+        setSuccessMsg(data.message || 'Operation successful! You can now login.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
@@ -95,12 +97,13 @@ export default function Login({ onLogin }) {
       }
 
     } catch (err) {
-      setError('Server not reachable. Check backend.');
+      setError('Could not connect to the server. Please check your connection.');
     }
   }
 
   const getHeader = () => {
     if (mode === 'register') return 'Create Account';
+    if (mode === 'forgot') return 'Update Password';
     return 'Login';
   };
 
@@ -116,57 +119,68 @@ export default function Login({ onLogin }) {
           <div className="form-control-group">
             <label>Username</label>
             <input
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username"
+              placeholder="Enter your username"
               required
+              autoComplete="username"
             />
           </div>
 
           <div className="form-control-group">
-            <label>Password</label>
+            <label>{mode === 'forgot' ? 'New Password' : 'Password'}</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter password"
               required
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
             />
           </div>
 
-          {mode === 'register' && (
+          {(mode === 'register' || mode === 'forgot') && (
             <div className="form-control-group">
-              <label>Confirm Password</label>
+              <label>Confirm {mode === 'forgot' ? 'New ' : ''}Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
+                placeholder="Re-type password"
                 required
+                autoComplete="new-password"
               />
             </div>
           )}
 
           <button type="submit">
-            {mode === 'register' ? 'Register' : 'Sign in'}
+            {mode === 'register' ? 'Register' : mode === 'forgot' ? 'Update' : 'Sign in'}
           </button>
         </form>
 
         <div className="toggle-mode">
           {mode === 'login' && (
-            <p>
-              No account?{' '}
-              <span className="register-link" onClick={() => switchMode('register')}>
-                Register
-              </span>
-            </p>
+            <>
+              <p>
+                Don't have an account?{' '}
+                <span className="register-link" onClick={() => switchMode('register')}>
+                  Register here
+                </span>
+              </p>
+              <p>
+                <span className="register-link" onClick={() => switchMode('forgot')}>
+                  Forgot password?
+                </span>
+              </p>
+            </>
           )}
 
-          {mode === 'register' && (
+          {(mode === 'register' || mode === 'forgot') && (
             <p>
-               Already have an account?{' '}
+              Already have an account?{' '}
               <span className="register-link" onClick={() => switchMode('login')}>
-                Back to login
+                Login here
               </span>
             </p>
           )}
