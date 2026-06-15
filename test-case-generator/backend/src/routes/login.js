@@ -1,48 +1,64 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_for_dev_only';
 
 /**
  * POST /api/login
- * Authenticates user credentials against the MongoDB database.
+ * Authenticates user credentials and returns a JWT token.
  */
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate the presence of compulsory fields
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
   try {
-    // Lookup matching profile credentials in MongoDB
-    const user = await User.findOne({ username, password });
+    // Explicitly select password since it is excluded by default in schema
+    const user = await User.findOne({ username }).select('+password');
     if (!user) {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
     }
 
-    // Return success and user info
-    return res.json({ success: true, user: { id: user._id, username: user.username } });
+    // Use model method to verify password
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Incorrect username or password' });
+    }
+
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    return res.json({ 
+      success: true, 
+      token,
+      user: { id: user._id, username: user.username } 
+    });
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, message: 'An error occurred on the server. Please try again.' });
+    return res.status(500).json({ success: false, message: 'An error occurred on the server.' });
   }
 });
 
 /**
  * POST /api/register
  * Creates a new user record in the MongoDB database.
+ * Password hashing is handled by the User model's pre-save hook.
  */
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
 
-  // Validate inputs
   if (!username || !password) {
     return res.status(400).json({ success: false, message: 'Please enter both username and password' });
   }
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
-
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
@@ -51,26 +67,25 @@ router.post('/register', async (req, res) => {
   }
 
   try {
-    // Check if user already exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(409).json({ success: false, message: 'This username is already taken' });
     }
 
-    // Create and save new user
     const newUser = new User({ username, password });
     await newUser.save();
 
-    return res.status(201).json({ success: true, user: { id: newUser._id, username: newUser.username }, message: 'Account created successfully!' });
+    return res.status(201).json({ success: true, message: 'Account created successfully!' });
   } catch (error) {
     console.error('Registration error:', error);
-    return res.status(500).json({ success: false, message: 'An error occurred during registration. Please try again.' });
+    return res.status(500).json({ success: false, message: 'An error occurred during registration.' });
   }
 });
 
 /**
  * POST /api/change-password
  * Updates the password for an existing user.
+ * Password hashing is handled by the User model's pre-save hook.
  */
 router.post('/change-password', async (req, res) => {
   const { username, newPassword } = req.body;
@@ -79,13 +94,20 @@ router.post('/change-password', async (req, res) => {
     return res.status(400).json({ success: false, message: 'Please enter both username and new password' });
   }
 
+  const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+  if (!passwordRegex.test(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+    });
+  }
+
   try {
     const user = await User.findOne({ username });
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    // Update password
     user.password = newPassword;
     await user.save();
 
@@ -94,6 +116,15 @@ router.post('/change-password', async (req, res) => {
     console.error('Password change error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred while updating the password.' });
   }
+});
+
+/**
+ * POST /api/logout
+ * Handles user logout. For JWT/sessionless, it's primarily a client-side action,
+ * but this endpoint provides a hook for future server-side cleanup.
+ */
+router.post('/logout', (req, res) => {
+  return res.json({ success: true, message: 'Successfully logged out' });
 });
 
 module.exports = router;

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import './Login.css';
 
 /**
@@ -40,7 +40,7 @@ export default function Login({ onLogin }) {
       return;
     }
 
-    if (mode === 'register') {
+    if (mode === 'register' || mode === 'forgot') {
       const passwordComplexityRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
       if (!passwordComplexityRegex.test(password)) {
         setError(
@@ -84,6 +84,11 @@ export default function Login({ onLogin }) {
         // Successful login
         setUsername('');
         setPassword('');
+
+        // Store JWT token and user info securely in local storage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         onLogin(data.user);
       }
     } catch (err) {
