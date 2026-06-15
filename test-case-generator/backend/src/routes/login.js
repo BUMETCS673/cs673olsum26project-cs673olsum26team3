@@ -56,6 +56,7 @@ router.post('/register', async (req, res) => {
   }
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+
   if (!passwordRegex.test(password)) {
     return res.status(400).json({
       success: false,
