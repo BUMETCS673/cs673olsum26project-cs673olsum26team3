@@ -23,7 +23,6 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
     }
 
-    // Use model method to verify password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Incorrect username or password' });
@@ -35,10 +34,10 @@ router.post('/login', async (req, res) => {
       { expiresIn: '24h' }
     );
 
-    return res.json({ 
-      success: true, 
+    return res.json({
+      success: true,
       token,
-      user: { id: user._id, username: user.username } 
+      user: { id: user._id, username: user.username }
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -75,7 +74,11 @@ router.post('/register', async (req, res) => {
     const newUser = new User({ username, password });
     await newUser.save();
 
-    return res.status(201).json({ success: true, message: 'Account created successfully!' });
+    return res.status(201).json({
+      success: true,
+      user: { id: newUser._id, username: newUser.username },
+      message: 'Account created successfully!'
+    });
   } catch (error) {
     console.error('Registration error:', error);
     return res.status(500).json({ success: false, message: 'An error occurred during registration.' });
@@ -88,10 +91,10 @@ router.post('/register', async (req, res) => {
  * Password hashing is handled by the User model's pre-save hook.
  */
 router.post('/change-password', async (req, res) => {
-  const { username, newPassword } = req.body;
+  const { username, currentPassword, newPassword } = req.body;
 
-  if (!username || !newPassword) {
-    return res.status(400).json({ success: false, message: 'Please enter both username and new password' });
+  if (!username || !currentPassword || !newPassword) {
+    return res.status(400).json({ success: false, message: 'Please enter your username, current password, and new password' });
   }
 
   const passwordRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
@@ -103,9 +106,14 @@ router.post('/change-password', async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).select('+password');
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const passwordMatch = await user.comparePassword(currentPassword);
+    if (!passwordMatch) {
+      return res.status(401).json({ success: false, message: 'Current password is incorrect' });
     }
 
     user.password = newPassword;
