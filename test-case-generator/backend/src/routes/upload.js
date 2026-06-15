@@ -69,6 +69,8 @@ router.post('/', (req, res, next) => {
 
     try {
         const processedDocuments = [];
+        const savedDocs = []; // track saved docs for background embedding
+
         for (const file of req.files) {
             let extractedText = '';
             const ext = path.extname(file.originalname).toLowerCase();
@@ -77,7 +79,7 @@ router.post('/', (req, res, next) => {
             if (file.mimetype === 'application/pdf' || ext === '.pdf') {
                 try {
                     // Suppress font warnings from pdf-parse during extraction
-                    const pdfData = await pdfParse(file.buffer); 
+                    const pdfData = await pdfParse(file.buffer);
                     extractedText = pdfData.text;
                 } catch (pdfErr) {
                     console.error(`[Error] Failed to parse PDF: ${file.originalname}`, pdfErr.message);
@@ -95,31 +97,6 @@ router.post('/', (req, res, next) => {
             });
             await newDoc.save();
 
-            // 3. Chunking & Vectorization (RAG Upgrade)
-            // Embedding failures are non-fatal: the document is already saved and
-            // the RAG pipeline falls back to a full-text scan when no vectors exist.
-            const chunks = createChunks(extractedText.trim());
-            try {
-                for (const chunkText of chunks) {
-                    if (chunkText.trim().length < 10) continue; // Skip very small chunks
-
-                    const embeddingResponse = await openai.embeddings.create({
-                        model: "text-embedding-3-small",
-                        input: chunkText
-                    });
-
-                    const newChunk = new Chunk({
-                        projectId: projectId.trim(),
-                        documentId: newDoc._id,
-                        text: chunkText,
-                        embedding: embeddingResponse.data[0].embedding
-                    });
-                    await newChunk.save();
-                }
-            } catch (embedErr) {
-                console.warn(`[Warning] Vector generation skipped for ${file.originalname}: ${embedErr.message}`);
-            }
-
             processedDocuments.push({
                 id: newDoc._id,
                 fileName: file.originalname,
@@ -127,12 +104,48 @@ router.post('/', (req, res, next) => {
                 uploadDate: newDoc.uploadDate,
                 textPreview: extractedText.trim().substring(0, 200)
             });
+            savedDocs.push({ doc: newDoc, text: extractedText.trim(), name: file.originalname });
         }
-        console.log(`[Success] Processed and vectorized ${processedDocuments.length} document(s) for project ${projectId}`);
-        return res.status(200).json({ message: 'Files uploaded, processed, and vectorized successfully!', data: processedDocuments });
+
+        // 3. Respond immediately after all documents are saved — embeddings run in background.
+        // Embedding failures are non-fatal: the RAG pipeline falls back to full-text scan when
+        // no vectors exist. Decoupling here prevents slow/rate-limited embedding API calls from
+        // blocking the upload response.
+        console.log(`[Success] Saved ${processedDocuments.length} document(s) for project ${projectId}; vectorization queued.`);
+        res.status(200).json({ message: 'Files uploaded, processed, and vectorized successfully!', data: processedDocuments });
+
+        // 4. Chunking & Vectorization in background (fire-and-forget)
+        setImmediate(async () => {
+            for (const { doc, text, name } of savedDocs) {
+                const chunks = createChunks(text);
+                try {
+                    for (const chunkText of chunks) {
+                        if (chunkText.trim().length < 10) continue;
+
+                        const embeddingResponse = await openai.embeddings.create({
+                            model: "text-embedding-3-small",
+                            input: chunkText
+                        });
+
+                        const newChunk = new Chunk({
+                            projectId: projectId.trim(),
+                            documentId: doc._id,
+                            text: chunkText,
+                            embedding: embeddingResponse.data[0].embedding
+                        });
+                        await newChunk.save();
+                    }
+                    console.log(`[Embed] Vectorized chunks for ${name}`);
+                } catch (embedErr) {
+                    console.warn(`[Warning] Vector generation skipped for ${name}: ${embedErr.message}`);
+                }
+            }
+        });
     } catch (error) {
         console.error('[System Error] Project document processing failure:', error);
-        return res.status(500).json({ error: 'Error processing document or vector generation.' });
+        if (!res.headersSent) {
+            return res.status(500).json({ error: 'Error processing document or vector generation.' });
+        }
     }
 });
 
