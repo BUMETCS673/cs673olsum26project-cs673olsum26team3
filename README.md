@@ -65,6 +65,18 @@ This file is loaded automatically by `python-dotenv` when running tests locally.
 
 ---
 
+## Live Website
+
+The app is deployed on Render. Free tier instances sleep after inactivity, so follow these steps:
+
+1. **Wake the backend first** — open https://speccheck-backend.onrender.com/ and wait until you see `{"status":"ok"}` (can take up to 60 seconds)
+2. **Open the frontend** — https://speccheck-frontend.onrender.com/
+3. Log in and use the app normally
+
+> If login fails on the first try, the backend may still be waking up. Wait a few seconds and try again.
+
+---
+
 ## Running the App
 
 ### Full stack via Docker Compose (recommended)
