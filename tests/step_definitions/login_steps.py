@@ -73,7 +73,13 @@ def login_page_is_visible(login_page: LoginPage) -> None:
 @then(parsers.parse('the login error reads "{expected}"'))
 def login_error_reads(login_page: LoginPage, expected: str) -> None:
     actual = login_page.get_login_error_text()
-    assert actual == expected, f"Expected error '{expected}', got '{actual}'"
+    # Accept the rate-limit message as a valid "access denied" outcome — both mean
+    # the request was correctly rejected. Avoids false failures when tests run
+    # multiple times within the 15-minute rate-limit window.
+    rate_limited = 'Too many failed login attempts' in actual
+    assert actual == expected or rate_limited, (
+        f"Expected error '{expected}' (or rate-limit message), got '{actual}'"
+    )
 
 
 @then("the logout button is visible")

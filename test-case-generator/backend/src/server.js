@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 5001;
 // Security Headers
 app.use(helmet());
 
-// Rate Limiting (Prevent Brute Force on login)
+// Rate Limiting (Prevent Brute Force on login/register only)
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 5,
@@ -39,8 +39,10 @@ app.get('/', (req, res) => {
   res.json({ status: 'ok', service: 'SpecCheck API', version: '1.0.0' });
 });
 
-// Routes
-app.use('/api', loginLimiter, loginRouter);
+// Routes — loginLimiter scoped only to auth endpoints, not all /api/* routes
+app.use('/api/login', loginLimiter);
+app.use('/api/register', loginLimiter);
+app.use('/api', loginRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/generate-tests', testGenRouter);
 app.use('/api/projects', projectsRouter);
