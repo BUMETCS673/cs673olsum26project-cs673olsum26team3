@@ -45,7 +45,7 @@ def table_has_rows(dashboard_page: DashboardPage, page, fixture_path) -> None:
 
     page.once("dialog", _handle)
     dashboard_page.select_files([fixture_path("sample_valid.pdf")])
-    for _ in range(180):  # wait up to 60 s for the upload dialog
+    for _ in range(360):  # wait up to 120 s for the upload dialog
         if captured:
             break
         page.wait_for_timeout(333)
@@ -77,7 +77,9 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
     action_fn()
 
     # Sync alerts are already captured; for async uploads poll until dialog fires.
-    for _ in range(300):  # up to 60 s
+    # Multi-file uploads are processed sequentially on the server; 3 files with
+    # one rate-limit retry each (15 s/retry) can push past 120 s total.
+    for _ in range(900):  # up to 180 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
