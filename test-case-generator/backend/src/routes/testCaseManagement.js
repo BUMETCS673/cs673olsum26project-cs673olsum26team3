@@ -1,3 +1,9 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 const express = require('express');
 const router = express.Router();
 const Project = require('../models/Project');
@@ -114,9 +120,20 @@ router.delete('/:storyId/cases/:tcId', async (req, res) => {
             return res.status(404).json({ message: 'Test case not found' });
         }
 
+        // Clean up impactedFeatures: remove the test case ID from relatedTestIds
+        if (story.impactedFeatures && Array.isArray(story.impactedFeatures)) {
+            story.impactedFeatures = story.impactedFeatures.map(feature => {
+                if (feature.relatedTestIds && Array.isArray(feature.relatedTestIds)) {
+                    feature.relatedTestIds = feature.relatedTestIds.filter(id => id !== tcId);
+                }
+                return feature;
+            }).filter(feature => feature.relatedTestIds && feature.relatedTestIds.length > 0);
+        }
+
         story.markModified('testCases');
+        story.markModified('impactedFeatures');
         await story.save();
-        res.json({ message: 'Test case deleted' });
+        res.json({ message: 'Test case deleted and impacted features updated' });
     } catch (error) {
         console.error('Error deleting test case:', error);
         res.status(500).json({ message: 'Error deleting test case' });

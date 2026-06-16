@@ -1,6 +1,13 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
+
 import React, { useState } from 'react';
 import './ProjectsView.css';
-import { FolderOpen, FileText, Eye, Plus, Trash2, X, Search } from 'lucide-react'; // Added Search icon
+import { FolderOpen, FileText, Eye, Plus, Trash2, X, Search, Zap } from 'lucide-react'; // Added Search icon
 
 /**
  * ProjectsView Component
@@ -265,6 +272,26 @@ export default function ProjectsView({ projects, documents, onNavigate, onDelete
                     >
                       <Eye size={16} />
                       <span>View Tests</span>
+                    </button>
+                    <button 
+                      onClick={() => onNavigate(project._id || project.id, 'impact-analysis')}
+                      className="flex-1 flex items-center justify-center gap-2 text-white py-2 rounded-lg text-sm font-medium transition-all cursor-pointer"
+                      style={{ 
+                        border: 'none', 
+                        backgroundColor: '#7c3aed',
+                        transition: 'all 0.2s ease' 
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = '#6d28d9';
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = '#7c3aed';
+                        e.currentTarget.style.transform = 'translateY(0)';
+                      }}
+                    >
+                      <Zap size={16} />
+                      <span>Impact</span>
                     </button>
                   </div>
                 </div>

@@ -1,3 +1,10 @@
+# AI-USAGE SUMMARY 
+# Tools: ChatGPT, Gemini
+# Overall AI Contribution: ~35% 
+# AI-Assisted Areas: Test scaffolding, BDD steps
+# Human Contributions: Test logic, assertions, custom fixtures
+# Notes: AI-generated code was reviewed and validated against requirements
+
 """Page Object for the DocumentsView (per-project document management).
 
 # AI-USAGE SUMMARY
