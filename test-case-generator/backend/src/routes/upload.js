@@ -100,10 +100,24 @@ router.post('/', (req, res, next) => {
             for (const chunkText of chunks) {
                 if (chunkText.trim().length < 10) continue; // Skip very small chunks
 
-                const embeddingResponse = await openai.embeddings.create({
-                    model: "text-embedding-3-small",
-                    input: chunkText
-                });
+                let embeddingResponse;
+                for (let attempt = 1; attempt <= 5; attempt++) {
+                    try {
+                        embeddingResponse = await openai.embeddings.create({
+                            model: "text-embedding-3-small",
+                            input: chunkText
+                        });
+                        break;
+                    } catch (err) {
+                        if (err.status === 429 && attempt < 5) {
+                            const delay = attempt * 15000; // 15s, 30s, 45s, 60s
+                            console.warn(`[Rate limit] Embedding attempt ${attempt} failed, retrying in ${delay / 1000}s...`);
+                            await new Promise(r => setTimeout(r, delay));
+                        } else {
+                            throw err;
+                        }
+                    }
+                }
 
                 const newChunk = new Chunk({
                     projectId: projectId.trim(),

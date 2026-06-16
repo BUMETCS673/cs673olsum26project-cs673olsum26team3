@@ -52,8 +52,10 @@ class DashboardPage:
 
     def navigate(self, base_url: str = BASE_URL) -> None:
         self.page.goto(base_url)
-        # After navigating, we land on either login page or projects page
-        self.page.wait_for_load_state("networkidle", timeout=15_000)
+        # "networkidle" is unreliable with Vite dev server (100+ individual JS module
+        # requests on first load never settle within 15 s in Docker). Wait for the
+        # login card element instead — appears as soon as React hydrates the page.
+        self.page.locator(".login-card").wait_for(state="visible", timeout=30_000)
 
     def login(self, username: str, password: str) -> None:
         """Log in and navigate into the first available project's Documents view."""
@@ -63,7 +65,7 @@ class DashboardPage:
         self.page.locator(".login-card button[type='submit']").click()
 
         # Wait for the Projects page (h1 "Projects" or Logout button appearing)
-        self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=10_000)
+        self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=20_000)
 
         # Navigate into the first project's Documents view
         self._open_first_project_documents()
@@ -83,7 +85,9 @@ class DashboardPage:
 
         docs_btn.wait_for(state="visible", timeout=10_000)
         docs_btn.click()
-        self.page.locator("main h1").wait_for(state="visible", timeout=10_000)
+        # Wait for a Documents-specific element (Projects view also has main h1,
+        # so waiting on h1 alone would return immediately from the Projects h1).
+        self.page.locator("div.border-dashed").wait_for(state="visible", timeout=10_000)
 
     def _create_test_project(self) -> None:
         """Create a test project via the UI (used when the account has no projects yet)."""
@@ -92,8 +96,11 @@ class DashboardPage:
         self.page.locator("button").filter(has_text="New Project").first.click()
         self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
         self.page.locator("button").filter(has_text="Create Project").click()
-        # Wait for modal to close and project list to re-render
-        self.page.wait_for_timeout(2_000)
+        # Wait for the new project card's Documents button to appear (API + re-render).
+        # Fixed sleep is unreliable in Docker where MongoDB Atlas can be slow.
+        self.page.get_by_role("button", name="Documents").first.wait_for(
+            state="visible", timeout=15_000
+        )
 
     # ── Header ───────────────────────────────────────────────────────────────
 

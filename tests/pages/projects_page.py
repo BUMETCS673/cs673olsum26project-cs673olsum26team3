@@ -26,7 +26,9 @@ class ProjectsPage:
         self.page.locator("button").filter(has_text="New Project").first.click()
         self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
         self.page.locator("button").filter(has_text="Create Project").click()
-        self.page.wait_for_timeout(2_000)
+        self.page.get_by_role("button", name="Documents").first.wait_for(
+            state="visible", timeout=15_000
+        )
 
     def search_for_project(self, text: str) -> None:
         """Fills out the search input and applies a brief timeout for React state changes."""

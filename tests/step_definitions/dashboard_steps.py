@@ -45,7 +45,7 @@ def table_has_rows(dashboard_page: DashboardPage, page, fixture_path) -> None:
 
     page.once("dialog", _handle)
     dashboard_page.select_files([fixture_path("sample_valid.pdf")])
-    for _ in range(90):  # wait up to 30 s for the upload dialog
+    for _ in range(180):  # wait up to 60 s for the upload dialog
         if captured:
             break
         page.wait_for_timeout(333)
@@ -77,7 +77,7 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
     action_fn()
 
     # Sync alerts are already captured; for async uploads poll until dialog fires.
-    for _ in range(150):  # up to 30 s
+    for _ in range(300):  # up to 60 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
