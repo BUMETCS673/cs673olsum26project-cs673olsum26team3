@@ -78,8 +78,8 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
 
     # Sync alerts are already captured; for async uploads poll until dialog fires.
     # Multi-file uploads are processed sequentially on the server; 3 files with
-    # one rate-limit retry each (15 s/retry) can push past 120 s total.
-    for _ in range(900):  # up to 180 s
+    # rate-limit retries (15+30+45+60 s each) can push past 180 s total.
+    for _ in range(1500):  # up to 300 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
@@ -144,12 +144,14 @@ def delete_first_row_ok(
     page,
     dialog_messages: list,
 ) -> None:
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.once("dialog", _handle)
-    dashboard_page.click_delete_button(0)
+    # page.once() has a race condition in older Playwright where the dialog is
+    # auto-dismissed before the handler fires. expect_dialog() registers the
+    # listener synchronously before the click so the dialog is captured reliably.
+    with page.expect_dialog() as dialog_info:
+        dashboard_page.click_delete_button(0)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.accept()
     page.wait_for_timeout(500)
 
 
@@ -159,12 +161,11 @@ def delete_first_row_cancel(
     page,
     dialog_messages: list,
 ) -> None:
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.dismiss()
-
-    page.once("dialog", _handle)
-    dashboard_page.click_delete_button(0)
+    with page.expect_dialog() as dialog_info:
+        dashboard_page.click_delete_button(0)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.dismiss()
     page.wait_for_timeout(300)
 
 

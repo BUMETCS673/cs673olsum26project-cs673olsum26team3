@@ -204,10 +204,18 @@ class TestCasesPage:
         """Open the Create modal, fill in the title, and save. Used for test data seeding."""
         self.click_create_button()
         self.page.get_by_placeholder("e.g., Verify Login with valid credentials").fill(title)
+        # Steps and expectedResults are HTML-required fields; omitting them blocks
+        # form submission via native browser validation, keeping the modal open.
+        self.page.locator("textarea[placeholder^='1. Go to homepage']").fill(
+            "1. Execute the test action\n2. Verify the result"
+        )
+        self.page.get_by_placeholder("What should happen?").fill(
+            "The test case executes and the expected outcome is observed"
+        )
         self.page.get_by_role("button", name="Save Test Case").click()
         # Wait for modal to close (API save completed) then a brief pause for list refresh.
-        # Fixed 800 ms is not enough when MongoDB Atlas is slow in Docker.
-        self.page.get_by_text("Create Manual Test Case").wait_for(state="hidden", timeout=10_000)
+        # Atlas network latency in Docker can push this past 10 s.
+        self.page.get_by_text("Create Manual Test Case").wait_for(state="hidden", timeout=20_000)
         self.page.wait_for_timeout(300)
 
     def is_create_modal_visible(self) -> bool:
