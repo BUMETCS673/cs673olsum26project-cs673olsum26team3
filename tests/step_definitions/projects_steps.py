@@ -8,9 +8,16 @@ from pages.login_page import LoginPage
 # given
 @given("the user is authenticated and viewing the Projects dashboard")
 def user_authenticated_on_projects(login_page: LoginPage, projects_page: ProjectsPage, test_credentials: dict) -> None:
-    """Logs in via the login page and waits for the Projects dashboard heading to appear."""
+    """Logs in via the login page and waits for the Projects dashboard heading to appear.
+
+    Creates a project if the account has none so the search tests always have data.
+    The fallback project name 'Test Automation Project' contains 'Project', satisfying
+    the search filter test that searches for the keyword 'Project'.
+    """
     login_page.login(test_credentials["username"], test_credentials["password"])
     projects_page.wait_for_projects_load()
+    if not projects_page.has_projects():
+        projects_page.create_test_project()
     
 
 

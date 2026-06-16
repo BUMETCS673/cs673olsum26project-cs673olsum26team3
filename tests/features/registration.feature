@@ -48,7 +48,7 @@ Feature: SpecCheck Registration
   @validation
   Scenario: REG-004 - Duplicate username shows already exists error
     When the user switches to Create Account
-    And the user enters username "admin"
+    And the user enters the existing test username
     And the user enters password "NewPassword123!"
     And the user enters confirm password "NewPassword123!"
     And the user clicks Register
@@ -57,7 +57,7 @@ Feature: SpecCheck Registration
   @smoke
   Scenario: REG-005 - Successful registration shows confirmation message
     When the user switches to Create Account
-    And the user enters username "brand_new_user_001"
+    And the user enters a unique new username
     And the user enters password "SecurePass123!"
     And the user enters confirm password "SecurePass123!"
     And the user clicks Register
@@ -94,7 +94,7 @@ Feature: SpecCheck Registration
   @registration
   Scenario: REG-009 - Username with spaces is accepted
     When the user switches to Create Account
-    And the user enters username "user with spaces"
+    And the user enters a unique username with spaces
     And the user enters password "StrongPass123!"
     And the user enters confirm password "StrongPass123!"
     And the user clicks Register
@@ -103,7 +103,7 @@ Feature: SpecCheck Registration
   @registration
   Scenario: REG-010 - Special characters in password are accepted
     When the user switches to Create Account
-    And the user enters username "special_char_user"
+    And the user enters a unique new username
     And the user enters password "P@ssw0rd!#$%"
     And the user enters confirm password "P@ssw0rd!#$%"
     And the user clicks Register

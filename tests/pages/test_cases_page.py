@@ -32,13 +32,32 @@ class TestCasesPage:
         self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=10_000)
 
     def navigate_to_test_cases(self) -> None:
-        """Click 'View Tests' on the first project card and wait for the table."""
-        btn = self.page.get_by_role("button", name="View Tests").first
-        btn.wait_for(state="visible", timeout=15_000)
-        btn.click()
+        """Click 'View Tests' on the first project card and wait for the table.
+
+        Creates a project first if the account has none, mirroring the approach
+        used in DashboardPage so the test is self-sufficient on a fresh DB.
+        """
+        view_tests_btn = self.page.get_by_role("button", name="View Tests").first
+        empty_state = self.page.get_by_text("Welcome to SpecCheck")
+
+        # Wait for either a project card or the empty state before deciding
+        view_tests_btn.or_(empty_state).first.wait_for(state="visible", timeout=15_000)
+
+        if not view_tests_btn.is_visible():
+            self._create_test_project()
+
+        view_tests_btn.wait_for(state="visible", timeout=10_000)
+        view_tests_btn.click()
         self.table.wait_for(state="visible", timeout=10_000)
         # Allow React to finish the async fetch and render rows
         self.page.wait_for_timeout(800)
+
+    def _create_test_project(self) -> None:
+        """Create a test project via the UI when the account has no projects yet."""
+        self.page.locator("button").filter(has_text="New Project").first.click()
+        self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
+        self.page.locator("button").filter(has_text="Create Project").click()
+        self.page.wait_for_timeout(2_000)
 
     # ── Table inspection ─────────────────────────────────────────────────────
 
@@ -170,8 +189,15 @@ class TestCasesPage:
     # ── Create manual test case modal ────────────────────────────────────────
 
     def click_create_button(self) -> None:
-        self.page.get_by_role("button", name="Create").click()
+        self.page.locator("button").filter(has_text="Create Test Case").click()
         self.page.wait_for_timeout(300)
+
+    def create_manual_test_case(self, title: str) -> None:
+        """Open the Create modal, fill in the title, and save. Used for test data seeding."""
+        self.click_create_button()
+        self.page.get_by_placeholder("e.g., Verify Login with valid credentials").fill(title)
+        self.page.get_by_role("button", name="Save Test Case").click()
+        self.page.wait_for_timeout(800)
 
     def is_create_modal_visible(self) -> bool:
         return self.page.get_by_text("Create Manual Test Case").is_visible()

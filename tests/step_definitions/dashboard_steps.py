@@ -33,8 +33,25 @@ def dashboard_is_open(dashboard_page: DashboardPage) -> None:
 
 
 @given("the document table has at least 1 row")
-def table_has_rows(dashboard_page: DashboardPage) -> None:
-    """Assumes the test project has at least one document (seeded by mock or real backend)."""
+def table_has_rows(dashboard_page: DashboardPage, page, fixture_path) -> None:
+    """Upload a seed document if the table is empty so deletion/management tests have a row."""
+    if dashboard_page.get_table_row_count() >= 1:
+        return
+    captured: list[str] = []
+
+    def _handle(dialog):
+        captured.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", _handle)
+    dashboard_page.select_files([fixture_path("sample_valid.pdf")])
+    for _ in range(90):  # wait up to 30 s for the upload dialog
+        if captured:
+            break
+        page.wait_for_timeout(333)
+    page.wait_for_timeout(500)
+    assert dashboard_page.get_table_row_count() >= 1, \
+        "Expected at least 1 document in the table after seeding upload"
 
 
 @given("all documents have been deleted")

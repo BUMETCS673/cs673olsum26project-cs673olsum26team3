@@ -24,6 +24,24 @@ def switch_to_create_account(registration_page: RegistrationPage) -> None:
     registration_page.switch_to_register()
 
 
+@when("the user enters the existing test username")
+def enter_existing_test_username(registration_page: RegistrationPage, test_credentials: dict) -> None:
+    """Use the TEST_USERNAME (always in DB) to trigger the duplicate-username error path."""
+    registration_page.fill_username(test_credentials["username"])
+
+
+@when("the user enters a unique new username")
+def enter_unique_new_username(registration_page: RegistrationPage, unique_id) -> None:
+    """Generate a unique username (via counter callable) so no two scenarios share one."""
+    registration_page.fill_username(f"test_reg_{unique_id()}")
+
+
+@when("the user enters a unique username with spaces")
+def enter_unique_username_with_spaces(registration_page: RegistrationPage, unique_id) -> None:
+    """Generate a unique username containing spaces to verify the backend accepts them."""
+    registration_page.fill_username(f"test user {unique_id()}")
+
+
 @when(parsers.parse('the user enters confirm password "{confirm_password}"'))
 def enter_confirm_password(registration_page: RegistrationPage, confirm_password: str) -> None:
     registration_page.fill_confirm_password(confirm_password)

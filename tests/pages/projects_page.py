@@ -17,6 +17,17 @@ class ProjectsPage:
         """Blocks execution until the 'Projects' dashboard heading renders on screen."""
         self.header_title.wait_for(state="visible", timeout=10_000)
 
+    def has_projects(self) -> bool:
+        """Return True if at least one project card is visible in the grid."""
+        return self.page.get_by_role("button", name="Documents").first.is_visible()
+
+    def create_test_project(self) -> None:
+        """Create 'Test Automation Project' so search tests have a project to filter."""
+        self.page.locator("button").filter(has_text="New Project").first.click()
+        self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
+        self.page.locator("button").filter(has_text="Create Project").click()
+        self.page.wait_for_timeout(2_000)
+
     def search_for_project(self, text: str) -> None:
         """Fills out the search input and applies a brief timeout for React state changes."""
         self.search_input.fill(text)
