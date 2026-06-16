@@ -3,8 +3,7 @@ import {
   ArrowLeft, Search, Download, Pencil, Archive, ArchiveRestore,
   Trash2, X, FileSpreadsheet, Code,
 } from 'lucide-react';
-
-const BASE = 'http://localhost:5001';
+import { API_URL as BASE } from '../../config';
 
 const LABEL_STYLE = {
   display: 'block', fontSize: '13px', fontWeight: '500',
@@ -267,17 +266,16 @@ export default function TestCaseManagementView({ userId, onBack }) {
         {/* Search + filter toolbar */}
         <div className="mb-5 space-y-3">
           {/* Search bar */}
-          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-            <Search size={16} className="flex-shrink-0 text-gray-400" />
+          <div className="relative">
             <input
               type="text"
               placeholder="Search by title, content, or project…"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="flex-1 bg-transparent text-sm text-gray-700 outline-none placeholder-gray-400"
+              className="w-full px-4 pr-9 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
             {search && (
-              <button onClick={() => setSearch('')} className="flex-shrink-0 text-gray-400 hover:text-gray-600 cursor-pointer">
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer">
                 <X size={14} />
               </button>
             )}

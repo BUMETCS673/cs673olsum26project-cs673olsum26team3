@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSession } from "../../context/SessionManager";
 import './Login.css';
+import { API_URL } from '../../config';
 
 export default function Login({ onLogin }) {
   const { login } = useSession();
@@ -54,7 +55,7 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyPayload),
