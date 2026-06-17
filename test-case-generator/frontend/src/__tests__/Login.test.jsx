@@ -9,6 +9,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Login from '../views/Login/Login';
 
+vi.mock('../context/SessionManager', () => ({
+  useSession: () => ({ login: vi.fn() }),
+}));
+
 const mockOnLogin = vi.fn();
 
 function renderLogin() {
@@ -94,7 +98,7 @@ describe('Login – API interactions', () => {
   test('calls onLogin with user data on successful login', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ success: true, user: { id: 'u1', username: 'alice' } }),
+      json: async () => ({ success: true, token: 'mock-token', user: { id: 'u1', username: 'alice' } }),
     });
     renderLogin();
     await userEvent.type(screen.getByPlaceholderText(/enter your username/i), 'alice');
@@ -132,8 +136,8 @@ describe('Login – API interactions', () => {
     renderLogin();
     await userEvent.click(screen.getByText(/register here/i));
     await userEvent.type(screen.getByPlaceholderText(/enter your username/i), 'newuser');
-    await userEvent.type(screen.getByPlaceholderText(/enter password/i), 'pass123');
-    await userEvent.type(screen.getByPlaceholderText(/re-type password/i), 'pass123');
+    await userEvent.type(screen.getByPlaceholderText(/enter password/i), 'Pass1@bc');
+    await userEvent.type(screen.getByPlaceholderText(/re-type password/i), 'Pass1@bc');
     await userEvent.click(screen.getByRole('button', { name: /register/i }));
     expect(await screen.findByText(/account created successfully/i)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /login/i })).toBeInTheDocument();

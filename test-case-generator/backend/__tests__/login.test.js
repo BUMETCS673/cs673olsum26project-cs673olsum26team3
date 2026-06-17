@@ -43,7 +43,7 @@ describe('POST /api/login', () => {
   });
 
   test('returns 401 when credentials do not match', async () => {
-    User.findOne.mockResolvedValue(null);
+    User.findOne.mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
     const res = await request(app).post('/api/login').send({ username: 'alice', password: 'wrong' });
     expect(res.status).toBe(401);
     expect(res.body.success).toBe(false);
@@ -51,7 +51,8 @@ describe('POST /api/login', () => {
   });
 
   test('returns 200 with user payload on valid credentials', async () => {
-    User.findOne.mockResolvedValue({ _id: 'uid-1', username: 'alice' });
+    const mockUser = { _id: 'uid-1', username: 'alice', comparePassword: jest.fn().mockResolvedValue(true) };
+    User.findOne.mockReturnValue({ select: jest.fn().mockResolvedValue(mockUser) });
     const res = await request(app).post('/api/login').send({ username: 'alice', password: 'pass' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
@@ -60,7 +61,7 @@ describe('POST /api/login', () => {
   });
 
   test('returns 500 on database error', async () => {
-    User.findOne.mockRejectedValue(new Error('DB error'));
+    User.findOne.mockReturnValue({ select: jest.fn().mockRejectedValue(new Error('DB error')) });
     const res = await request(app).post('/api/login').send({ username: 'alice', password: 'pass' });
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
@@ -84,7 +85,7 @@ describe('POST /api/register', () => {
 
   test('returns 409 when username is already taken', async () => {
     User.findOne.mockResolvedValue({ username: 'alice' });
-    const res = await request(app).post('/api/register').send({ username: 'alice', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'alice', password: 'Pass1@bc' });
     expect(res.status).toBe(409);
     expect(res.body.success).toBe(false);
     expect(res.body.message).toMatch(/already taken/i);
@@ -92,7 +93,7 @@ describe('POST /api/register', () => {
 
   test('returns 201 with new user on successful registration', async () => {
     User.findOne.mockResolvedValue(null);
-    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'Pass1@bc' });
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.user.username).toBe('bob');
@@ -100,7 +101,7 @@ describe('POST /api/register', () => {
 
   test('returns 500 on database error', async () => {
     User.findOne.mockRejectedValue(new Error('DB error'));
-    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'pass' });
+    const res = await request(app).post('/api/register').send({ username: 'bob', password: 'Pass1@bc' });
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });
@@ -122,25 +123,25 @@ describe('POST /api/change-password', () => {
   });
 
   test('returns 404 when user is not found', async () => {
-    User.findOne.mockResolvedValue(null);
-    const res = await request(app).post('/api/change-password').send({ username: 'ghost', newPassword: 'newpass' });
+    User.findOne.mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
+    const res = await request(app).post('/api/change-password').send({ username: 'ghost', currentPassword: 'OldPass1!', newPassword: 'NewPass1!' });
     expect(res.status).toBe(404);
     expect(res.body.message).toMatch(/not found/i);
   });
 
   test('returns 200 and updates the password', async () => {
-    const mockUser = { username: 'alice', password: 'oldpass', save: jest.fn().mockResolvedValue({}) };
-    User.findOne.mockResolvedValue(mockUser);
-    const res = await request(app).post('/api/change-password').send({ username: 'alice', newPassword: 'newpass' });
+    const mockUser = { username: 'alice', password: 'OldPass1!', comparePassword: jest.fn().mockResolvedValue(true), save: jest.fn().mockResolvedValue({}) };
+    User.findOne.mockReturnValue({ select: jest.fn().mockResolvedValue(mockUser) });
+    const res = await request(app).post('/api/change-password').send({ username: 'alice', currentPassword: 'OldPass1!', newPassword: 'NewPass1!' });
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    expect(mockUser.password).toBe('newpass');
+    expect(mockUser.password).toBe('NewPass1!');
     expect(mockUser.save).toHaveBeenCalled();
   });
 
   test('returns 500 on database error', async () => {
-    User.findOne.mockRejectedValue(new Error('DB error'));
-    const res = await request(app).post('/api/change-password').send({ username: 'alice', newPassword: 'newpass' });
+    User.findOne.mockReturnValue({ select: jest.fn().mockRejectedValue(new Error('DB error')) });
+    const res = await request(app).post('/api/change-password').send({ username: 'alice', currentPassword: 'OldPass1!', newPassword: 'NewPass1!' });
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
   });
