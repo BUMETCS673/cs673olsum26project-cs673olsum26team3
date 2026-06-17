@@ -23,22 +23,49 @@ class TestCasesPage:
 
     def navigate(self, base_url: str = BASE_URL) -> None:
         self.page.goto(base_url)
-        self.page.wait_for_load_state("networkidle", timeout=15_000)
+        # Vite dev server serves 100+ JS modules on first load; networkidle times out
+        # in Docker before they settle. Wait for the login card instead.
+        self.page.locator(".login-card").wait_for(state="visible", timeout=30_000)
 
     def login(self, username: str, password: str) -> None:
         self.page.locator(".login-card input[type='text']").fill(username)
         self.page.locator(".login-card input[type='password']").fill(password)
         self.page.locator(".login-card button[type='submit']").click()
-        self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=10_000)
+        self.page.locator("button[title='Logout']").wait_for(state="visible", timeout=20_000)
 
     def navigate_to_test_cases(self) -> None:
-        """Click 'View Tests' on the first project card and wait for the table."""
-        btn = self.page.get_by_role("button", name="View Tests").first
-        btn.wait_for(state="visible", timeout=15_000)
-        btn.click()
+        """Click 'View Tests' on the first project card and wait for the table.
+
+        Creates a project first if the account has none, mirroring the approach
+        used in DashboardPage so the test is self-sufficient on a fresh DB.
+        """
+        view_tests_btn = self.page.get_by_role("button", name="View Tests").first
+        empty_state = self.page.get_by_text("Welcome to SpecCheck")
+
+        # Wait for either a project card or the empty state before deciding
+        view_tests_btn.or_(empty_state).first.wait_for(state="visible", timeout=15_000)
+
+        if not view_tests_btn.is_visible():
+            self._create_test_project()
+
+        view_tests_btn.wait_for(state="visible", timeout=10_000)
+        view_tests_btn.click()
         self.table.wait_for(state="visible", timeout=10_000)
-        # Allow React to finish the async fetch and render rows
-        self.page.wait_for_timeout(800)
+        # TestCasesView initialises with isLoading=false then the useEffect fires and sets
+        # isLoading=true. Without a brief yield first, the wait_for(hidden) can return
+        # immediately (element not yet in DOM) before the fetch even starts, causing
+        # get_table_row_count() to see 0 and seed unnecessary duplicates.
+        self.page.wait_for_timeout(500)
+        self.page.get_by_text("Loading test cases").wait_for(state="hidden", timeout=15_000)
+
+    def _create_test_project(self) -> None:
+        """Create a test project via the UI when the account has no projects yet."""
+        self.page.locator("button").filter(has_text="New Project").first.click()
+        self.page.get_by_placeholder("e.g., Mobile App").fill("Test Automation Project")
+        self.page.locator("button").filter(has_text="Create Project").click()
+        self.page.get_by_role("button", name="View Tests").first.wait_for(
+            state="visible", timeout=15_000
+        )
 
     # ── Table inspection ─────────────────────────────────────────────────────
 
@@ -170,7 +197,25 @@ class TestCasesPage:
     # ── Create manual test case modal ────────────────────────────────────────
 
     def click_create_button(self) -> None:
-        self.page.get_by_role("button", name="Create").click()
+        self.page.locator("button").filter(has_text="Create Test Case").click()
+        self.page.wait_for_timeout(300)
+
+    def create_manual_test_case(self, title: str) -> None:
+        """Open the Create modal, fill in the title, and save. Used for test data seeding."""
+        self.click_create_button()
+        self.page.get_by_placeholder("e.g., Verify Login with valid credentials").fill(title)
+        # Steps and expectedResults are HTML-required fields; omitting them blocks
+        # form submission via native browser validation, keeping the modal open.
+        self.page.locator("textarea[placeholder^='1. Go to homepage']").fill(
+            "1. Execute the test action\n2. Verify the result"
+        )
+        self.page.get_by_placeholder("What should happen?").fill(
+            "The test case executes and the expected outcome is observed"
+        )
+        self.page.get_by_role("button", name="Save Test Case").click()
+        # Wait for modal to close (API save completed) then a brief pause for list refresh.
+        # Atlas network latency in Docker can push this past 10 s.
+        self.page.get_by_text("Create Manual Test Case").wait_for(state="hidden", timeout=20_000)
         self.page.wait_for_timeout(300)
 
     def is_create_modal_visible(self) -> bool:

@@ -67,6 +67,25 @@ router.post('/', (req, res, next) => {
         return res.status(400).json({ error: 'Valid Project ID is required for document context.' });
     }
 
+    const embedWithRetry = async (text) => {
+        for (let attempt = 1; attempt <= 5; attempt++) {
+            try {
+                return await openai.embeddings.create({
+                    model: "text-embedding-3-small",
+                    input: text
+                });
+            } catch (err) {
+                if (err.status === 429 && attempt < 5) {
+                    const delay = attempt * 15000;
+                    console.warn(`[Rate limit] Embedding attempt ${attempt} failed, retrying in ${delay / 1000}s...`);
+                    await new Promise(r => setTimeout(r, delay));
+                } else {
+                    throw err;
+                }
+            }
+        }
+    };
+
     try {
         const processedDocuments = [];
         for (const file of req.files) {
@@ -76,8 +95,7 @@ router.post('/', (req, res, next) => {
             // 1. Text Extraction
             if (file.mimetype === 'application/pdf' || ext === '.pdf') {
                 try {
-                    // Suppress font warnings from pdf-parse during extraction
-                    const pdfData = await pdfParse(file.buffer); 
+                    const pdfData = await pdfParse(file.buffer);
                     extractedText = pdfData.text;
                 } catch (pdfErr) {
                     console.error(`[Error] Failed to parse PDF: ${file.originalname}`, pdfErr.message);
@@ -95,16 +113,12 @@ router.post('/', (req, res, next) => {
             });
             await newDoc.save();
 
-            // 3. Chunking & Vectorization (RAG Upgrade)
+            // 3. Chunking & Vectorization
             const chunks = createChunks(extractedText.trim());
             for (const chunkText of chunks) {
-                if (chunkText.trim().length < 10) continue; // Skip very small chunks
+                if (chunkText.trim().length < 10) continue;
 
-                const embeddingResponse = await openai.embeddings.create({
-                    model: "text-embedding-3-small",
-                    input: chunkText
-                });
-
+                const embeddingResponse = await embedWithRetry(chunkText);
                 const newChunk = new Chunk({
                     projectId: projectId.trim(),
                     documentId: newDoc._id,

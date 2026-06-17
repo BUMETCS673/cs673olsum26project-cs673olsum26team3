@@ -8,14 +8,22 @@
 # Notes:
 #   - Uses 'a user is logged in' (vs 'the user is logged in') to avoid
 #     conflicting with the existing dashboard_steps definition.
-#   - Mock data provides 3 test cases: AI-001/AI-002 contain 'login' in their
-#     title; AI-003 ('PDF upload') does not — used to verify AT2 filtering.
+#   - 'given_test_case_dashboard_is_open' seeds test cases via UI if the project
+#     has fewer than 3, so tests work against a real backend with an empty DB.
 """
 from __future__ import annotations
 
 from pytest_bdd import given, parsers, then, when
 
 from pages.test_cases_page import TestCasesPage
+
+# Titles used when the project has fewer than 3 test cases.
+# Two contain 'login' (for AT2 search test) and one does not.
+_SEED_TITLES = [
+    "Verify successful login with valid credentials",
+    "Verify login fails with incorrect password",
+    "Verify PDF document upload completes successfully",
+]
 
 
 # ─────────────────────────────── Given ──────────────────────────────────────
@@ -29,6 +37,18 @@ def a_user_is_logged_in(test_cases_page: TestCasesPage, test_credentials: dict) 
 @given("the test case dashboard is open")
 def given_test_case_dashboard_is_open(test_cases_page: TestCasesPage) -> None:
     test_cases_page.navigate_to_test_cases()
+    _seed_test_cases_if_needed(test_cases_page)
+
+
+def _seed_test_cases_if_needed(tcp: TestCasesPage) -> None:
+    """Create manual test cases via the UI if fewer than 3 exist.
+
+    This ensures AT1–AT4, AT13 (need ≥ 1 row) and AT2/AT15 (need ≥ 2 with
+    'login' in the title) always have enough data without requiring pre-seeded DB state.
+    """
+    existing = tcp.get_table_row_count()
+    for title in _SEED_TITLES[existing:]:
+        tcp.create_manual_test_case(title)
 
 
 @given("there are multiple test cases in the dashboard")
@@ -127,6 +147,12 @@ def each_row_has_priority(test_cases_page: TestCasesPage) -> None:
 def dashboard_displays_n_test_cases(test_cases_page: TestCasesPage, count: int) -> None:
     actual = test_cases_page.get_table_row_count()
     assert actual == count, f"Expected {count} test cases but found {actual}"
+
+
+@then("the dashboard has at least 1 test case")
+def dashboard_has_at_least_one(test_cases_page: TestCasesPage) -> None:
+    actual = test_cases_page.get_table_row_count()
+    assert actual >= 1, f"Expected at least 1 test case but found {actual}"
 
 
 # ── AT6 – Type filter header ──────────────────────────────────────────────────
@@ -298,4 +324,17 @@ def page_heading_contains(test_cases_page: TestCasesPage, text: str) -> None:
     heading = test_cases_page.get_heading_text()
     assert text in heading, (
         f"Page heading '{heading}' does not contain expected text '{text}'"
+    )
+
+
+@then("the page heading shows the project name")
+def page_heading_shows_project_name(test_cases_page: TestCasesPage) -> None:
+    """Verify the h1 renders as 'Test Cases / <projectName>' with a non-empty project name."""
+    heading = test_cases_page.get_heading_text()
+    assert "Test Cases" in heading, (
+        f"Expected heading to contain 'Test Cases', got: '{heading}'"
+    )
+    parts = heading.split("/")
+    assert len(parts) == 2 and parts[1].strip(), (
+        f"Expected 'Test Cases / <project name>' format, got: '{heading}'"
     )

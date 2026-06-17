@@ -18,30 +18,32 @@ except Exception:
 
 echo "Waiting for backend at $BACKEND ..."
 i=1
-while [ $i -le 30 ]; do
-    if http_ready "$BACKEND/api/upload"; then
+while [ $i -le 40 ]; do
+    if http_ready "$BACKEND/"; then
         echo "Backend is ready."
         break
     fi
-    echo "Attempt $i/30 failed, retrying in 3s..."
+    echo "Attempt $i/40 failed, retrying in 3s..."
     sleep 3
     i=$((i + 1))
 done
 
 echo "Waiting for frontend at $FRONTEND ..."
 i=1
-while [ $i -le 30 ]; do
+while [ $i -le 40 ]; do
     if http_ready "$FRONTEND"; then
         echo "Frontend is ready."
         break
     fi
-    echo "Attempt $i/30 failed, retrying in 3s..."
+    echo "Attempt $i/40 failed, retrying in 3s..."
     sleep 3
     i=$((i + 1))
 done
 
-# Give Vite a moment to finish compiling after becoming HTTP-reachable.
-echo "Waiting 15s for Vite to finish compiling..."
-sleep 15
+# Vite dev server compiles JS modules lazily (on first browser request), so no
+# amount of sleep pre-compiles them. The real guard is the .login-card wait in
+# navigate(). This brief pause just avoids hammering Vite before it's settled.
+echo "Waiting 10s for services to stabilise..."
+sleep 10
 
 exec pytest --tb=short -v

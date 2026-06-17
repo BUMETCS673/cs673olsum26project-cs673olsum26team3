@@ -36,7 +36,7 @@ class LoginPage:
 
     def navigate(self, base_url: str = BASE_URL) -> None:
         self.page.goto(base_url)
-        self.login_title.wait_for(state="visible", timeout=10_000)
+        self.login_title.wait_for(state="visible", timeout=30_000)
 
     def fill_username(self, username: str) -> None:
         self.username_input.fill(username)
@@ -65,15 +65,15 @@ class LoginPage:
         self.confirm_password_input.fill(password)
 
     def get_success_message_text(self) -> str:
-        self.success_message.wait_for(state="visible", timeout=10_000)
+        self.success_message.wait_for(state="visible", timeout=15_000)
         return self.success_message.text_content() or ""
 
     def wait_for_dashboard(self) -> None:
         """After successful login the Navbar appears with the Logout button."""
-        self.logout_button.wait_for(state="visible", timeout=10_000)
+        self.logout_button.wait_for(state="visible", timeout=20_000)
 
     def wait_for_login_page(self) -> None:
-        self.login_title.wait_for(state="visible", timeout=10_000)
+        self.login_title.wait_for(state="visible", timeout=20_000)
 
     def get_login_error_text(self) -> str:
         return self.login_error.text_content() or ""

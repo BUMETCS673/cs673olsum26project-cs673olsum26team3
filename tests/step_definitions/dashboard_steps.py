@@ -33,8 +33,25 @@ def dashboard_is_open(dashboard_page: DashboardPage) -> None:
 
 
 @given("the document table has at least 1 row")
-def table_has_rows(dashboard_page: DashboardPage) -> None:
-    """Assumes the test project has at least one document (seeded by mock or real backend)."""
+def table_has_rows(dashboard_page: DashboardPage, page, fixture_path) -> None:
+    """Upload a seed document if the table is empty so deletion/management tests have a row."""
+    if dashboard_page.get_table_row_count() >= 1:
+        return
+    captured: list[str] = []
+
+    def _handle(dialog):
+        captured.append(dialog.message)
+        dialog.accept()
+
+    page.once("dialog", _handle)
+    dashboard_page.select_files([fixture_path("sample_valid.pdf")])
+    for _ in range(360):  # wait up to 120 s for the upload dialog
+        if captured:
+            break
+        page.wait_for_timeout(333)
+    page.wait_for_timeout(500)
+    assert dashboard_page.get_table_row_count() >= 1, \
+        "Expected at least 1 document in the table after seeding upload"
 
 
 @given("all documents have been deleted")
@@ -60,7 +77,9 @@ def _wait_for_dialog(page, dialog_messages: list, action_fn) -> None:
     action_fn()
 
     # Sync alerts are already captured; for async uploads poll until dialog fires.
-    for _ in range(150):  # up to 30 s
+    # Multi-file uploads are processed sequentially on the server; 3 files with
+    # rate-limit retries (15+30+45+60 s each) can push past 180 s total.
+    for _ in range(1500):  # up to 300 s
         if dialog_messages:
             break
         page.wait_for_timeout(200)
@@ -125,12 +144,14 @@ def delete_first_row_ok(
     page,
     dialog_messages: list,
 ) -> None:
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.accept()
-
-    page.once("dialog", _handle)
-    dashboard_page.click_delete_button(0)
+    # page.once() has a race condition in older Playwright where the dialog is
+    # auto-dismissed before the handler fires. expect_dialog() registers the
+    # listener synchronously before the click so the dialog is captured reliably.
+    with page.expect_dialog() as dialog_info:
+        dashboard_page.click_delete_button(0)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.accept()
     page.wait_for_timeout(500)
 
 
@@ -140,12 +161,11 @@ def delete_first_row_cancel(
     page,
     dialog_messages: list,
 ) -> None:
-    def _handle(dialog):
-        dialog_messages.append(dialog.message)
-        dialog.dismiss()
-
-    page.once("dialog", _handle)
-    dashboard_page.click_delete_button(0)
+    with page.expect_dialog() as dialog_info:
+        dashboard_page.click_delete_button(0)
+    dialog = dialog_info.value
+    dialog_messages.append(dialog.message)
+    dialog.dismiss()
     page.wait_for_timeout(300)
 
 
