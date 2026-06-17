@@ -1,23 +1,20 @@
 import { useState } from 'react';
+import { useSession } from "../../context/SessionManager";
 import './Login.css';
+import { API_URL } from '../../config';
 
-/**
- * Login Component
- * Handles user authentication, new user registration, and password updates.
- */
 export default function Login({ onLogin }) {
-  // Mode toggle states: 'login', 'register', 'forgot'
+  const { login } = useSession();
+
   const [mode, setMode] = useState('login');
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  /**
-   * Resets form state when switching modes.
-   */
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
@@ -26,18 +23,25 @@ export default function Login({ onLogin }) {
     setConfirmPassword('');
   };
 
-  /**
-   * Handles form submission based on the current mode.
-   */
   async function handleSubmit(e) {
     e.preventDefault();
+
     setError('');
     setSuccessMsg('');
 
-    // Validation for registration and password change
     if ((mode === 'register' || mode === 'forgot') && password !== confirmPassword) {
       setError('Passwords do not match. Please re-type them.');
       return;
+    }
+
+    if (mode === 'register' || mode === 'forgot') {
+      const passwordComplexityRegex = /^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*]).{8,}$/;
+      if (!passwordComplexityRegex.test(password)) {
+        setError(
+          'Password must be at least 8 characters and include one uppercase letter, one number, and one special character.'
+        );
+        return;
+      }
     }
 
     let endpoint = '/api/login';
@@ -51,7 +55,7 @@ export default function Login({ onLogin }) {
     }
 
     try {
-      const res = await fetch(`http://localhost:5001${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyPayload),
@@ -59,29 +63,45 @@ export default function Login({ onLogin }) {
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
+      if (!res.ok) {
         setError(data.message || 'Something went wrong. Please try again.');
         return;
       }
 
       if (mode === 'register' || mode === 'forgot') {
-        // Notify user and switch back to login mode
         setSuccessMsg(data.message || 'Operation successful! You can now login.');
         setMode('login');
         setPassword('');
         setConfirmPassword('');
-      } else {
-        // Successful login
-        setUsername('');
-        setPassword('');
-        onLogin(data.user);
+        return;
       }
+
+      // LOGIN SUCCESS
+      if (!data.user || !data.token) {
+        setError('Invalid server response (missing user/token).');
+        return;
+      }
+
+      const normalizedUser = {
+        ...data.user,
+        id: data.user._id || data.user.id,
+      };
+
+      login(normalizedUser, data.token);
+
+      setUsername('');
+      setPassword('');
+      setConfirmPassword('');
+
+      if (onLogin) {
+        onLogin(normalizedUser);
+      }
+
     } catch (err) {
       setError('Could not connect to the server. Please check your connection.');
     }
   }
 
-  // Determine header text based on mode
   const getHeader = () => {
     if (mode === 'register') return 'Create Account';
     if (mode === 'forgot') return 'Update Password';
@@ -94,7 +114,7 @@ export default function Login({ onLogin }) {
         <h1>{getHeader()}</h1>
 
         {error && <div className="error">{error}</div>}
-        {successMsg && <div className="success" style={{ color: '#10b981', marginBottom: '1rem', fontSize: '14px', textAlign: 'center', fontWeight: '500' }}>{successMsg}</div>}
+        {successMsg && <div className="success">{successMsg}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-control-group">
@@ -102,10 +122,10 @@ export default function Login({ onLogin }) {
             <input
               type="text"
               value={username}
-              onChange={e => setUsername(e.target.value)}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter your username"
               required
               autoComplete="username"
-              placeholder="Enter your username"
             />
           </div>
 
@@ -114,10 +134,10 @@ export default function Login({ onLogin }) {
             <input
               type="password"
               value={password}
-              onChange={e => setPassword(e.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter password"
               required
               autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              placeholder="Enter password"
             />
           </div>
 
@@ -127,41 +147,30 @@ export default function Login({ onLogin }) {
               <input
                 type="password"
                 value={confirmPassword}
-                onChange={e => setConfirmPassword(e.target.value)}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Re-type password"
                 required
                 autoComplete="new-password"
-                placeholder="Re-type password"
               />
             </div>
           )}
 
-          <button
-            type="submit"
-            style={{ transition: 'all 0.2s ease' }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = '#374151';
-              e.currentTarget.style.transform = 'translateY(-1px)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#000000';
-              e.currentTarget.style.transform = 'translateY(0)';
-            }}
-          >
+          <button type="submit">
             {mode === 'register' ? 'Register' : mode === 'forgot' ? 'Update' : 'Sign in'}
           </button>
         </form>
 
-        <div className="toggle-mode" style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '13px' }}>
+        <div className="toggle-mode">
           {mode === 'login' && (
             <>
               <p>
                 Don't have an account?{' '}
-                <span onClick={() => switchMode('register')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
+                <span className="register-link" onClick={() => switchMode('register')}>
                   Register here
                 </span>
               </p>
-              <p style={{ marginTop: '8px' }}>
-                <span onClick={() => switchMode('forgot')} style={{ color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
+              <p>
+                <span className="register-link" onClick={() => switchMode('forgot')}>
                   Forgot password?
                 </span>
               </p>
@@ -171,7 +180,7 @@ export default function Login({ onLogin }) {
           {(mode === 'register' || mode === 'forgot') && (
             <p>
               Already have an account?{' '}
-              <span onClick={() => switchMode('login')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
+              <span className="register-link" onClick={() => switchMode('login')}>
                 Login here
               </span>
             </p>

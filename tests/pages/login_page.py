@@ -25,9 +25,12 @@ class LoginPage:
         # Login form elements — Login.jsx has no id/class attrs, use structural selectors
         self.login_title = page.locator(".login-card h1")
         self.username_input = page.locator(".login-card input[type='text']")
-        self.password_input = page.locator(".login-card input[type='password']")
+        self.password_input = page.locator(".login-card input[type='password']").first
+        self.confirm_password_input = page.locator(".login-card input[placeholder='Re-type password']")
         self.sign_in_button = page.locator(".login-card button[type='submit']")
         self.login_error = page.locator(".login-card .error")
+        self.success_message = page.locator(".login-card .success")
+        self.register_link = page.get_by_text("Register here")
         # After login, Navbar renders with a Logout button (title="Logout")
         self.logout_button = page.locator("button[title='Logout']")
 
@@ -53,6 +56,17 @@ class LoginPage:
 
     def click_logout(self) -> None:
         self.logout_button.click()
+
+    def switch_to_register(self) -> None:
+        self.register_link.click()
+        self.page.wait_for_timeout(250)
+
+    def fill_confirm_password(self, password: str) -> None:
+        self.confirm_password_input.fill(password)
+
+    def get_success_message_text(self) -> str:
+        self.success_message.wait_for(state="visible", timeout=10_000)
+        return self.success_message.text_content() or ""
 
     def wait_for_dashboard(self) -> None:
         """After successful login the Navbar appears with the Logout button."""
