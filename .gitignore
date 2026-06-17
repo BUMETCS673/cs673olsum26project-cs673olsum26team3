@@ -14,11 +14,6 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 
-# Environment variables
-.env
-.env.local
-**/.env
-
 # OS files
 .DS_Store
 Thumbs.db
@@ -38,3 +33,9 @@ test-case-generator/frontend/build/
 # IDE
 .vscode/
 .idea/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env

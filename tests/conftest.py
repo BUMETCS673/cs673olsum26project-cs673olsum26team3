@@ -1,3 +1,10 @@
+# AI-USAGE SUMMARY 
+# Tools: ChatGPT, Gemini
+# Overall AI Contribution: ~35% 
+# AI-Assisted Areas: Test scaffolding, BDD steps
+# Human Contributions: Test logic, assertions, custom fixtures
+# Notes: AI-generated code was reviewed and validated against requirements
+
 """Root conftest: fixtures, screenshot-on-failure hook, and step-definition registration."""
 from __future__ import annotations
 

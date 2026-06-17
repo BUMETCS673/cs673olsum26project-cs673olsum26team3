@@ -1,13 +1,22 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
+
 import React, { useState, useMemo, useEffect } from 'react';
 import './TestCasesView.css';
 import { ArrowLeft, Download, Plus, Trash2, FileSpreadsheet, Code, PenTool, Copy, Filter, X } from 'lucide-react';
 import { API_URL } from '../../config';
+import { useSession } from '../../context/SessionManager';
 
 /**
  * TestCasesView Component
  * Focuses purely on creating, viewing, and organizing AI-generated and manual test scenarios.
  */
 export default function TestCasesView({ projectId, projectName, onBack, onNavigateToInput, generatedData }) {
+  const { user: currentUser } = useSession();
   const [testCases, setTestCases] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedTC, setExpandedTC] = useState(null);
@@ -56,6 +65,7 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
             return {
                 ...tc,
                 id: formattedId,
+                storyId: story._id,
                 createdAt: story.generatedAt || story.createdAt,
                 _uId: `${story._id}_${tc.id || 'tc'}_${globalIndex++}`
             };
@@ -157,8 +167,10 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
   };
 
   useEffect(() => {
-    if (generatedData && generatedData.data && generatedData.data.testCases) {
-      fetchSavedTestCases();
+    if (generatedData && generatedData.data) {
+      if (generatedData.data.testCases) {
+        fetchSavedTestCases();
+      }
     }
   }, [generatedData]);
 
@@ -201,9 +213,29 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
     });
   };
 
-  const handleDeleteTestCase = (id) => {
+  const handleDeleteTestCase = async (id) => {
     if (window.confirm('Are you sure you want to delete this test case?')) {
-      setTestCases(testCases.filter(tc => tc.id !== id));
+      const tcToDelete = testCases.find(tc => tc.id === id);
+      if (!tcToDelete || !tcToDelete.storyId) {
+        alert('Error: Could not identify parent story for deletion.');
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_URL}/api/test-cases/${tcToDelete.storyId}/cases/${id}`, {
+          method: 'DELETE'
+        });
+
+        if (res.ok) {
+          setTestCases(testCases.filter(tc => tc.id !== id));
+        } else {
+          const errorData = await res.json();
+          alert(`Failed to delete: ${errorData.message}`);
+        }
+      } catch (err) {
+        console.error('Deletion error:', err);
+        alert('Network error while deleting test case.');
+      }
     }
   };
 
@@ -416,23 +448,24 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
               ) : filteredTestCases.length === 0 ? (
                 <tr><td colSpan="6" className="px-6 py-12 text-center text-gray-500">No test cases match filters.</td></tr>
               ) : (
-                filteredTestCases.map((tc) => (
-                  <React.Fragment key={tc._uId}>
-                    <tr 
-                      onClick={() => setExpandedTC(expandedTC === tc._uId ? null : tc._uId)}
-                      className="transition-colors hover:bg-gray-50 cursor-pointer"
-                    >
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-mono font-semibold text-gray-500">{tc.id}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-medium text-gray-900">{tc.title}</span>
-                          {tc.preconditions && (
-                            <span className="text-xs text-gray-500 mt-1"><strong>Pre:</strong> {tc.preconditions}</span>
-                          )}
-                        </div>
-                      </td>
+                filteredTestCases.map((tc) => {
+                  return (
+                    <React.Fragment key={tc._uId}>
+                      <tr 
+                        onClick={() => setExpandedTC(expandedTC === tc._uId ? null : tc._uId)}
+                        className="transition-all duration-300 cursor-pointer hover:bg-gray-50"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-mono font-semibold text-gray-500">{tc.id}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-900">{tc.title}</span>
+                            {tc.preconditions && (
+                              <span className="text-xs mt-1 text-gray-500"><strong>Pre:</strong> {tc.preconditions}</span>
+                            )}
+                          </div>
+                        </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-gray-500">
                           {tc.createdAt ? new Date(tc.createdAt).toLocaleDateString() : '—'}
@@ -498,8 +531,9 @@ export default function TestCasesView({ projectId, projectName, onBack, onNaviga
                       </tr>
                     )}
                   </React.Fragment>
-                ))
-              )}
+                );
+              })
+            )}
             </tbody>
           </table>
         </div>

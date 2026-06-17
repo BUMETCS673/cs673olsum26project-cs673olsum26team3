@@ -1,3 +1,10 @@
+# AI-USAGE SUMMARY 
+# Tools: ChatGPT, Gemini
+# Overall AI Contribution: ~35% 
+# AI-Assisted Areas: Test scaffolding, BDD steps
+# Human Contributions: Test logic, assertions, custom fixtures
+# Notes: AI-generated code was reviewed and validated against requirements
+
 """Ensure the fixtures directory exists for manually added test files.
 
 Place your test files in tests/fixtures/ before running the test suite:

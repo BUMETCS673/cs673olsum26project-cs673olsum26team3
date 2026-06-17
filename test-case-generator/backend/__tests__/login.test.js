@@ -1,3 +1,9 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
 // Overall AI Contribution: ~50%

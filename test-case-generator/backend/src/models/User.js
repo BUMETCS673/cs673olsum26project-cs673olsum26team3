@@ -1,3 +1,9 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
@@ -32,7 +38,7 @@ const UserSchema = new mongoose.Schema({
     },
     role: {
         type: String,
-        enum: ['user', 'admin'],
+        enum: ['user', 'admin', 'qa_lead'],
         default: 'user'
     }
 }, {

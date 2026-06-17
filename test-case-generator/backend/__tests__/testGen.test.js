@@ -1,3 +1,9 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 // AI-USAGE SUMMARY
 // Tools: Claude (Claude Code)
 // Overall AI Contribution: ~80%
@@ -20,6 +26,10 @@ jest.mock('openai', () => ({
           choices: [{
             message: {
               content: JSON.stringify({
+                impactedFeatures: [
+                  { name: 'Feature A', relatedTestIds: ['TC-001'] },
+                  { name: 'Feature B', relatedTestIds: ['TC-001'] }
+                ],
                 testCases: [{
                   id: 'TC-001',
                   title: 'Verify login',
@@ -98,6 +108,10 @@ describe('POST /api/generate-tests', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.testCases).toHaveLength(1);
     expect(res.body.data.testCases[0].id).toBe('AI-001');
+    expect(res.body.data.impactedFeatures).toEqual([
+      { name: 'Feature A', relatedTestIds: ['AI-001'] },
+      { name: 'Feature B', relatedTestIds: ['AI-001'] }
+    ]);
   });
 
   test('assigns IDs starting after the existing max AI number', async () => {

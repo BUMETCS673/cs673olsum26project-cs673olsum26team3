@@ -1,3 +1,9 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 const express = require('express');
 const router = express.Router();
 const { OpenAI } = require('openai');
@@ -15,6 +21,13 @@ const openai = new OpenAI({
  * CT-31/CT-33: Endpoint to generate real AI test cases using GitHub Models (GPT-4o).
  * Implements RAG (Retrieval-Augmented Generation) using Atlas Vector Search.
  */
+// AI-ASSISTED: YES 
+// Tool: Gemini, ChatGPT
+// Prompt Summary: Implement a RAG-based test case generation endpoint using Atlas Vector Search and GPT-4o
+// AI Contribution: ~60% 
+// Modifications: Added Atlas Vector Search logic, fallback to full document scan, and robust ID generation
+// Verification: Unit tests (testGen.test.js), Manual API testing
+// Confidence: High
 router.post('/', async (req, res) => {
     const { requirement, options, projectId } = req.body;
 
@@ -86,7 +99,7 @@ router.post('/', async (req, res) => {
         if (options.edgeCase) typesToGenerate.push('Edge Cases (boundaries, limits, unusual conditions)');
 
         const prompt = `
-            You are a Senior QA Engineer. Generate structured test cases based on the User Story and Product Context below.
+            You are a Senior QA Engineer. Analyze the User Story and Product Context below to identify impacted features and generate structured test cases.
             
             User Story: "${requirement}"
             
@@ -95,10 +108,11 @@ router.post('/', async (req, res) => {
             ${existingContext}
             
             Requirements:
-            1. ONLY generate the following types of test cases: ${typesToGenerate.join(', ')}.
-            2. Do NOT duplicate the "Existing Test Cases" listed above.
-            3. Do NOT generate any other types of test cases.
-            4. Format each test case as a JSON object with:
+            1. Identify any existing system features or modules that might be impacted by this new user story based on the Product Context. 
+            2. Generate the following types of test cases: ${typesToGenerate.join(', ')}.
+            3. For each impacted feature identified, specify which of the generated test case IDs (e.g., TC-001) are related to it.
+            4. Do NOT duplicate the "Existing Test Cases" listed above.
+            5. Format each test case as a JSON object with:
                - id (string, e.g., TC-001)
                - title (string)
                - preconditions (string)
@@ -107,7 +121,9 @@ router.post('/', async (req, res) => {
                - type (string: "Functional", "Negative", or "Edge Case")
                - priority (string: "High", "Medium", or "Low")
             
-            Return ONLY a JSON object containing a "testCases" array.
+            Return ONLY a JSON object containing:
+            - "impactedFeatures": An array of objects, each with "name" (string) and "relatedTestIds" (array of strings matching the IDs you generated).
+            - "testCases": An array of the test case objects.
         `;
 
         // CT-33: Call AI API
@@ -126,6 +142,7 @@ router.post('/', async (req, res) => {
         
         const content = JSON.parse(rawContent);
         let aiTestCases = content.testCases || content.test_cases || (Array.isArray(content) ? content : Object.values(content)[0]);
+        let impactedFeatures = content.impactedFeatures || [];
 
         // --- ROBUST ID UNIQUE GENERATION LOGIC ---
         // 1. Get all existing test cases for this project
@@ -142,34 +159,82 @@ router.post('/', async (req, res) => {
         });
 
         // 2. Assign new IDs starting from maxAiNum + 1
+        // We also need to update the relatedTestIds in impactedFeatures to match the new AI-XXX IDs
         if (Array.isArray(aiTestCases)) {
-            aiTestCases = aiTestCases.map((tc, index) => ({
-                ...tc,
-                id: `AI-${String(maxAiNum + index + 1).padStart(3, '0')}`
+            const idMap = {}; // Maps original TC-XXX IDs to new AI-XXX IDs
+            aiTestCases = aiTestCases.map((tc, index) => {
+                const oldId = tc.id;
+                const newId = `AI-${String(maxAiNum + index + 1).padStart(3, '0')}`;
+                idMap[oldId] = newId;
+                return { ...tc, id: newId };
+            });
+
+            // Update impactedFeatures with the new IDs
+            impactedFeatures = impactedFeatures.map(feature => ({
+                ...feature,
+                relatedTestIds: (feature.relatedTestIds || []).map(oldId => idMap[oldId] || oldId)
             }));
         }
 
-        // CT-66: Persist results
-        const newUserStory = new UserStory({
-            projectId,
-            requirement,
-            options,
-            testCases: aiTestCases || []
-        });
-        await newUserStory.save();
+        // --- SECONDARY EVALUATION (AI PEER REVIEW) ---
+        // Call a second AI agent to review the generated output for quality and accuracy.
+        let evaluation = { score: 0, feedback: [], status: 'Pending' };
+        try {
+            const evalPrompt = `
+                You are a Senior QA Manager reviewing test cases generated by an AI assistant.
+                
+                Original Requirement: "${requirement}"
+                Product Context: ${contextAvailable ? groundedContext.substring(0, 3000) : 'None'}
+                
+                Generated Test Cases:
+                ${JSON.stringify(aiTestCases, null, 2)}
+                
+                Task:
+                1. Score the overall quality, relevance, and coverage of these test cases from 1 to 10.
+                2. Provide 2-4 concise, professional feedback points or warnings (flags).
+                3. Check if the test cases actually cover the original requirement and if they follow QA best practices (clear steps, logical flow).
+                
+                Return ONLY a JSON object with:
+                - "score": number (1-10)
+                - "feedback": array of strings
+            `;
 
-        let aiNotification = `AI generation completed successfully using ${retrievalMethod}.`;
-        if (!contextAvailable) {
-            aiNotification = 'Warning: No product specification context found. Generated test cases are generic.';
+            const evalResponse = await openai.chat.completions.create({
+                model: 'gpt-4o',
+                messages: [
+                    { role: 'system', content: 'You are an objective QA auditor. Output only valid JSON.' },
+                    { role: 'user', content: evalPrompt }
+                ],
+                temperature: 0.3 // Lower temperature for more consistent evaluation
+            });
+
+            let evalRaw = evalResponse.choices[0].message.content.trim();
+            if (evalRaw.startsWith('```')) evalRaw = evalRaw.replace(/```json|```/g, '');
+            evaluation = JSON.parse(evalRaw);
+            evaluation.status = 'Completed';
+        } catch (evalError) {
+            console.error('Secondary Evaluation Failed:', evalError.message);
+            evaluation = { score: 0, feedback: ['Evaluation service temporarily unavailable'], status: 'Failed' };
         }
 
+        // --- DRAFT RETURN (HITL) ---
+        // Instead of saving immediately, we return the generated data as a draft.
+        // The frontend will allow review and then call a separate /save endpoint.
+        
         return res.status(200).json({
-            message: aiNotification,
+            message: contextAvailable 
+                ? 'AI generation completed. Please review the draft below.' 
+                : 'Warning: No product specification context found. Draft results are generic.',
             data: {
-                status: 'Success',
+                status: 'Draft',
+                projectId,
+                requirement,
+                options,
                 grounded: contextAvailable,
                 retrievalMethod: retrievalMethod,
-                testCases: aiTestCases
+                testCases: aiTestCases,
+                impactedFeatures: impactedFeatures,
+                evaluation: evaluation // Include evaluation results
             }
         });
 
@@ -178,6 +243,34 @@ router.post('/', async (req, res) => {
         return res.status(500).json({ 
             message: 'AI Generation failed. Please try again.' 
         });
+    }
+});
+
+/**
+ * POST /api/generate-tests/save
+ * Finalizes and persists the reviewed test cases to the database.
+ */
+router.post('/save', async (req, res) => {
+    const { projectId, requirement, options, testCases, impactedFeatures } = req.body;
+
+    if (!projectId || !requirement) {
+        return res.status(400).json({ message: 'Missing required project or requirement data.' });
+    }
+
+    try {
+        const newUserStory = new UserStory({
+            projectId,
+            requirement,
+            options,
+            testCases: testCases || [],
+            impactedFeatures: impactedFeatures || []
+        });
+
+        await newUserStory.save();
+        res.status(201).json({ message: 'Test cases saved successfully', storyId: newUserStory._id });
+    } catch (error) {
+        console.error('Save Failure:', error);
+        res.status(500).json({ message: 'Failed to save reviewed test cases.' });
     }
 });
 

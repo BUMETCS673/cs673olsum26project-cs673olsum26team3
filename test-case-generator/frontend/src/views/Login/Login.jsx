@@ -1,11 +1,22 @@
+// AI-USAGE SUMMARY 
+// Tools: ChatGPT, Gemini
+// Overall AI Contribution: ~35% 
+// AI-Assisted Areas: Code structure, initial implementation, unit tests
+// Human Contributions: Business logic, validation, security checks, refinement
+// Notes: AI-generated code was reviewed, refactored, and validated before integration
 import { useState } from 'react';
 import { useSession } from "../../context/SessionManager";
 import './Login.css';
 import { API_URL } from '../../config';
 
+/**
+ * Login Component
+ * Handles user authentication, new user registration, and password updates.
+ */
 export default function Login({ onLogin }) {
   const { login } = useSession();
 
+  // Mode toggle states: 'login', 'register', 'forgot'
   const [mode, setMode] = useState('login');
 
   const [username, setUsername] = useState('');
@@ -15,6 +26,9 @@ export default function Login({ onLogin }) {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  /**
+   * Resets form state when switching modes.
+   */
   const switchMode = (newMode) => {
     setMode(newMode);
     setError('');
@@ -23,12 +37,16 @@ export default function Login({ onLogin }) {
     setConfirmPassword('');
   };
 
+  /**
+   * Handles form submission based on the current mode.
+   */
   async function handleSubmit(e) {
     e.preventDefault();
 
     setError('');
     setSuccessMsg('');
 
+    // Validation for registration and password change
     if ((mode === 'register' || mode === 'forgot') && password !== confirmPassword) {
       setError('Passwords do not match. Please re-type them.');
       return;
@@ -49,6 +67,7 @@ export default function Login({ onLogin }) {
 
     if (mode === 'register') {
       endpoint = '/api/register';
+      bodyPayload = { username, password };
     } else if (mode === 'forgot') {
       endpoint = '/api/change-password';
       bodyPayload = { username, newPassword: password };
@@ -69,6 +88,7 @@ export default function Login({ onLogin }) {
       }
 
       if (mode === 'register' || mode === 'forgot') {
+        // Notify user and switch back to login mode
         setSuccessMsg(data.message || 'Operation successful! You can now login.');
         setMode('login');
         setPassword('');
@@ -76,7 +96,7 @@ export default function Login({ onLogin }) {
         return;
       }
 
-      // LOGIN SUCCESS
+      // Successful login
       if (!data.user || !data.token) {
         setError('Invalid server response (missing user/token).');
         return;
@@ -87,6 +107,7 @@ export default function Login({ onLogin }) {
         id: data.user._id || data.user.id,
       };
 
+      // Store JWT token and user info via session manager
       login(normalizedUser, data.token);
 
       setUsername('');
@@ -102,6 +123,7 @@ export default function Login({ onLogin }) {
     }
   }
 
+  // Determine header text based on mode
   const getHeader = () => {
     if (mode === 'register') return 'Create Account';
     if (mode === 'forgot') return 'Update Password';
@@ -114,7 +136,7 @@ export default function Login({ onLogin }) {
         <h1>{getHeader()}</h1>
 
         {error && <div className="error">{error}</div>}
-        {successMsg && <div className="success">{successMsg}</div>}
+        {successMsg && <div className="success" style={{ color: '#10b981', marginBottom: '1rem', fontSize: '14px', textAlign: 'center', fontWeight: '500' }}>{successMsg}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-control-group">
@@ -155,22 +177,33 @@ export default function Login({ onLogin }) {
             </div>
           )}
 
-          <button type="submit">
+          <button 
+            type="submit"
+            style={{ transition: 'all 0.2s ease' }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.backgroundColor = '#374151';
+              e.currentTarget.style.transform = 'translateY(-1px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.backgroundColor = '#000000';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
             {mode === 'register' ? 'Register' : mode === 'forgot' ? 'Update' : 'Sign in'}
           </button>
         </form>
 
-        <div className="toggle-mode">
+        <div className="toggle-mode" style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '13px' }}>
           {mode === 'login' && (
             <>
               <p>
                 Don't have an account?{' '}
-                <span className="register-link" onClick={() => switchMode('register')}>
+                <span className="register-link" onClick={() => switchMode('register')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
                   Register here
                 </span>
               </p>
-              <p>
-                <span className="register-link" onClick={() => switchMode('forgot')}>
+              <p style={{ marginTop: '8px' }}>
+                <span className="register-link" onClick={() => switchMode('forgot')} style={{ color: '#6b7280', cursor: 'pointer', textDecoration: 'underline' }}>
                   Forgot password?
                 </span>
               </p>
@@ -180,7 +213,7 @@ export default function Login({ onLogin }) {
           {(mode === 'register' || mode === 'forgot') && (
             <p>
               Already have an account?{' '}
-              <span className="register-link" onClick={() => switchMode('login')}>
+              <span className="register-link" onClick={() => switchMode('login')} style={{ color: '#2563eb', cursor: 'pointer', fontWeight: '600' }}>
                 Login here
               </span>
             </p>

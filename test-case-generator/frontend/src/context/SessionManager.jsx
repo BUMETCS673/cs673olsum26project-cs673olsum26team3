@@ -40,11 +40,18 @@ export const SessionProvider = ({ children }) => {
     localStorage.removeItem("token");
   };
 
+  // 6. Update user function
+  const updateUser = (updatedUserData) => {
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+    localStorage.setItem("user", JSON.stringify(newUser));
+  };
+
   const isAuthenticated = !!token;
 
   return (
     <SessionContext.Provider
-      value={{ user, token, login, logout, isAuthenticated, loading }}
+      value={{ user, token, login, logout, updateUser, isAuthenticated, loading }}
     >
       {children}
     </SessionContext.Provider>
